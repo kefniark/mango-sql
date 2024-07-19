@@ -1,0 +1,96 @@
+type DBClient struct {
+    ctx *DBContext
+{{ range . }}   {{ .NameNormalized }}   *{{ .NameNormalized }}Queries
+{{ end }}}
+
+func newClient(ctx *DBContext) *DBClient {
+    return &DBClient{
+        ctx: ctx,
+{{ range . }}       {{ .NameNormalized }}: &{{ .NameNormalized }}Queries{ ctx: ctx },
+{{ end }}   }
+}
+
+func New(db *sqlx.DB) *DBClient {
+    client := newClient(&DBContext{
+		db:       db,
+		prepared: make(map[string]*sqlx.Stmt),
+		tx:       nil,
+	})
+    return client
+}
+
+func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e error) {
+	if db.ctx.tx != nil {
+		return fmt.Errorf("nested transaction is not supported")
+	}
+
+	tx, err := db.ctx.db.Beginx()
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			e = errors.New(p.(string))
+		}
+	}()
+
+	client := newClient(&DBContext{
+		db:       db.ctx.db,
+		prepared: db.ctx.prepared,
+		tx:       tx,
+	})
+	if err = transaction(client); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	return tx.Commit()
+}
+
+// Split slice into chunks of the given size
+func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
+	for chunkSize < len(items) {
+		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+	}
+	return append(chunks, items)
+}
+
+func (ctx *DBContext) Get(dest interface{}, query string, args ...interface{}) error {
+	if ctx.tx != nil {
+		return ctx.tx.Get(dest, query, args...)
+	}
+	return ctx.db.Get(dest, query, args...)
+}
+
+func (ctx *DBContext) Select(dest interface{}, query string, args ...interface{}) error {
+	if ctx.tx != nil {
+		return ctx.tx.Select(dest, query, args...)
+	}
+	return ctx.db.Select(dest, query, args...)
+}
+
+func (ctx *DBContext) Exec(query string, args ...any) (sql.Result, error) {
+	if ctx.tx != nil {
+		return ctx.tx.Exec(query, args...)
+	}
+	return ctx.db.Exec(query, args...)
+}
+
+func (ctx *DBContext) Stmt(query string) (*sqlx.Stmt, error) {
+	if _, ok := ctx.prepared[query]; !ok {
+		stmt, err := ctx.db.Preparex(query)
+		if err != nil {
+			return nil, err
+		}
+		ctx.prepared[query] = stmt
+	}
+
+	stmt := ctx.prepared[query]
+	if ctx.tx != nil {
+		return ctx.tx.Stmtx(stmt), nil
+	}
+	return stmt, nil
+}
+

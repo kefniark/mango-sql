@@ -1,0 +1,30 @@
+// Table {{ .Name }}
+
+var {{ .NameNormalized }}Fields = []string{ {{ range .Columns }} "{{ .Name }}",{{ end }} }
+
+{{ if .HasCompositeId }}
+type {{ .NameNormalized }}PrimaryKey struct {
+{{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .Name }}" db:"{{ .Name }}"`
+{{ end }}}
+}
+{{ else }}
+type {{ .NameNormalized }}PrimaryKey = {{ (index .ColumnIds 0).Type }}
+{{ end }}
+
+type {{ .NameNormalized }}Model struct {
+{{ range .Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .Name }}" db:"{{ .Name }}"`
+{{ end }}}
+
+type {{ .NameNormalized }}Create struct {
+{{ range .ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .Name }}" db:"{{ .Name }}"`
+{{ end }}}
+
+type {{ .NameNormalized }}Update struct {
+{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .Name }}" db:"{{ .Name }}"`
+{{ end }}}
+
+// Helper used to manipulate {{ .NameNormalized }} ({{ .Name }} table)
+type {{ .NameNormalized }}Queries struct {
+    ctx *DBContext
+}
+

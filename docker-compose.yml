@@ -1,0 +1,34 @@
+version: "3.6"
+services:
+  pgtestdb:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: password
+    restart: unless-stopped
+    volumes:
+      # Uses a tmpfs volume to make tests extremely fast. The data in test
+      # databases is not persisted across restarts, nor does it need to be.
+      - type: tmpfs
+        target: /var/lib/postgresql/data/
+    command:
+      - "postgres"
+      - "-c" # turn off fsync for speed
+      - "fsync=off"
+      - "-c" # log everything for debugging
+      - "log_statement=all"
+    ports:
+      # Entirely up to you what port you want to use while testing.
+      - "5433:5432"
+
+  # pgweb:
+  #   container_name: pgweb
+  #   restart: always
+  #   image: sosedoff/pgweb
+  #   ports: 
+  #     - "8081:8081" 
+  #   links: 
+  #     - pgtestdb:pgtestdb  # my database container is called postgres, not db
+  #   environment:
+  #     - PGWEB_DATABASE_URL=postgres://postgres:password@pgtestdb:5432/postgres?sslmode=disable
+  #   depends_on:
+  #     - pgtestdb

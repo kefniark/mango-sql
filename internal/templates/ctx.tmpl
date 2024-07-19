@@ -1,0 +1,10 @@
+const (
+{{ .Const }}
+)
+
+type DBContext struct {
+    db *sqlx.DB
+    tx *sqlx.Tx
+    prepared map[string]*sqlx.Stmt
+}
+
