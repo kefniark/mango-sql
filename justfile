@@ -2,10 +2,10 @@ build:
     go build -ldflags="-s -w" -o bin/mangosql ./cmd/mangosql
 
 format:
-    golangci-lint run --fix
+    golangci-lint run --fix ./...
 
 lint:
-    golangci-lint run
+    golangci-lint run ./...
 
 generate:
     go run ./cmd/mangosql/ --output codegen/postgres/client.go --package postgres ./codegen/postgres/schema.sql

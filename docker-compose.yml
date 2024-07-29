@@ -20,15 +20,15 @@ services:
       # Entirely up to you what port you want to use while testing.
       - "5433:5432"
 
-  # pgweb:
-  #   container_name: pgweb
-  #   restart: always
-  #   image: sosedoff/pgweb
-  #   ports: 
-  #     - "8081:8081" 
-  #   links: 
-  #     - pgtestdb:pgtestdb  # my database container is called postgres, not db
-  #   environment:
-  #     - PGWEB_DATABASE_URL=postgres://postgres:password@pgtestdb:5432/postgres?sslmode=disable
-  #   depends_on:
-  #     - pgtestdb
+  pgweb:
+    container_name: pgweb
+    restart: always
+    image: sosedoff/pgweb
+    ports: 
+      - "8081:8081" 
+    links: 
+      - pgtestdb:pgtestdb  # my database container is called postgres, not db
+    environment:
+      - PGWEB_DATABASE_URL=postgres://postgres:password@pgtestdb:5432/postgres?sslmode=disable
+    depends_on:
+      - pgtestdb

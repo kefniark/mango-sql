@@ -3,7 +3,8 @@ package internal
 import "fmt"
 
 type SQLSchema struct {
-	Tables map[string]*SQLTable
+	Tables  map[string]*SQLTable
+	Queries []SQLQuery
 }
 
 type SQLTable struct {
@@ -13,15 +14,36 @@ type SQLTable struct {
 	Constraints []*SQLTableConstraint
 	Indexes     []*SQLTableIndex
 	References  []*SQLTableReference
+	Referenced  []*SQLTableReference
 
 	Order int
 }
 
+type SQLQuery struct {
+	Query  string
+	Method string
+	Name   string
+
+	Select         string
+	SelectOriginal string
+	SelectFields   []*SQLColumn
+
+	From    string
+	Where   string
+	GroupBy []string
+	Having  string
+}
+
 type SQLColumn struct {
-	Name     string
-	Type     string
-	TypeSql  string
-	Nullable bool
+	Name       string
+	As         string
+	Ref        string
+	Type       string
+	TypeSql    string
+	Nullable   bool
+	Table      string
+	TableAs    string
+	HasDefault bool
 
 	Order int
 }

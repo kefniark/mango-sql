@@ -1,0 +1,42 @@
+{{ if len . }}
+type CustomQueries struct {
+	ctx *DBContext
+}
+
+{{ range . }}
+    // Find {{ .NameNormalized }} records based on the provided conditions
+    //
+    // Usage:
+    //   entities, err := db.Queries.{{ .NameNormalized }}(
+    //     // ... can use filters here (cf db.{{ .NameNormalized }}.Query.*)
+    //   )
+    //
+    // SQL Statement:
+    //   {{ .SqlQuery }}
+    func (q *CustomQueries) {{ .NameNormalized }}(filters ...WhereCondition) ([]{{ .NameNormalized }}Model, error ) {
+        query := squirrel.Select("{{ .Select }}")
+        query = query.From("{{ .From }}").PlaceholderFormat(squirrel.Dollar)
+{{ if .Where }}        query = query.Where("{{ .Where }}")
+{{ end }}{{ if .GroupBy }}        query = query.GroupBy({{ range .GroupBy }}"{{ . }}"{{ end }})
+{{ end }}{{ if .Having }}        query = query.GroupBy("{{ .Having }}")
+{{ end }}        for _, filter := range filters {
+            query = filter(query)
+        }
+
+        sql, args, err := query.ToSql()
+        if err != nil {
+            return nil, err
+        }
+
+        entries := []{{ .NameNormalized }}Model{}
+        err = q.ctx.queryMany(&entries, sql, args...)
+        return entries, err
+    }
+
+    type {{ .NameNormalized }}Model struct {
+{{ range .Fields }}     {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ end }}
+    }
+{{ end }}
+{{ end }}
+

@@ -61,25 +61,43 @@ type GenerateOptions struct {
 }
 
 func generate(opts GenerateOptions) error {
-	stat, err := os.Stat(opts.Output)
+	stat, err := os.Stat(opts.Src)
 	if err != nil {
 		return err
 	}
 
 	var sql string
+	var queriesFilePath string
+	var queriesSql string
 	if stat.IsDir() {
 		sql = parseMigrationFolder(opts.Src)
+
+		queriesFilePath = path.Join(opts.Src, "queries.sql")
 	} else {
 		data, err := os.ReadFile(opts.Src)
 		if err != nil {
 			return err
 		}
 		sql = string(data)
+
+		queriesFilePath = path.Join(path.Dir(opts.Src), "queries.sql")
 	}
 
 	schema, err := internal.ParseSchema(sql)
 	if err != nil {
 		return err
+	}
+
+	if _, err = os.Stat(queriesFilePath); err == nil {
+		data, err := os.ReadFile(queriesFilePath)
+		if err != nil {
+			return err
+		}
+		queriesSql = string(data)
+		err = internal.ParseQueries(schema, queriesSql)
+		if err != nil {
+			return err
+		}
 	}
 
 	var b bytes.Buffer

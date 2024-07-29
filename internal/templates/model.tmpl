@@ -4,27 +4,76 @@ var {{ .NameNormalized }}Fields = []string{ {{ range .Columns }} "{{ .Name }}",{
 
 {{ if .HasCompositeId }}
 type {{ .NameNormalized }}PrimaryKey struct {
-{{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .Name }}" db:"{{ .Name }}"`
-{{ end }}}
+{{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ end }}
 }
 {{ else }}
 type {{ .NameNormalized }}PrimaryKey = {{ (index .ColumnIds 0).Type }}
 {{ end }}
 
 type {{ .NameNormalized }}Model struct {
-{{ range .Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .Name }}" db:"{{ .Name }}"`
+{{ range .Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
 {{ end }}}
 
 type {{ .NameNormalized }}Create struct {
-{{ range .ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .Name }}" db:"{{ .Name }}"`
+{{ if not .HasCompositeId }}
+{{ range .ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ end }}
+{{ else }}
+{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ end }}
 {{ end }}}
 
 type {{ .NameNormalized }}Update struct {
-{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .Name }}" db:"{{ .Name }}"`
+{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
 {{ end }}}
 
-// Helper used to manipulate {{ .NameNormalized }} ({{ .Name }} table)
 type {{ .NameNormalized }}Queries struct {
     ctx *DBContext
+    // Used to modify {{ .NameNormalized }} queries (filter, pagination, search, ...)
+    //
+    // Usage:
+    //   users, err := db.{{ .NameNormalized }}.FindMany(
+    //     db.{{ .NameNormalized }}.Query.DeletedAt.IsNotNull(),
+    //     db.{{ .NameNormalized }}.Query.Name.OrderAsc(),
+    //     # add more conditions ...
+    //   )
+    Query {{ .NameNormalized }}Filters
+}
+
+type {{ .NameNormalized }}Filters struct {
+{{ range.GetFieldFilters }}{{ .Name }} {{ .Model }}{{ .Name }}Filters
+    {{ end }}
+}
+
+{{ range.GetFieldFilters }}type {{ .Model }}{{ .Name }}Filters struct {}
+{{ end }}
+
+// Create a new {{ .NameNormalized }}Model instance (not automatically saved in database)
+//
+// Example :
+//   {{ .Name }} = db.{{ .NameNormalized }}.New()
+//   {{ .Name }}.Name = "newName"
+//   // ... manipulate the {{ .Name }} entity
+//   err = {{ .Name }}.Save(db)
+func (q *{{ .NameNormalized }}Queries) New() *{{ .NameNormalized }}Model {
+    return &{{ .NameNormalized }}Model{
+        {{ if not .HasCompositeId }}Id:    uuid.New(),{{ end }}
+    }
+}
+
+// Save a {{ .NameNormalized }}Model
+//
+// Usage:
+//   user, err = db.User.FindById(id)
+//   user.Name = "newName"
+//   err = user.Save(db)
+func (q *{{ .NameNormalized }}Model) Save(db *DBClient) error {
+    data, err := db.{{ .NameNormalized }}.Upsert({{ .NameNormalized }}Update{
+        {{ range .ColumnsUpdate }}          {{ .NameNormalized }}: q.{{ .NameNormalized }},
+        {{ end }}
+    })
+    *q = *data
+    return err
 }
 

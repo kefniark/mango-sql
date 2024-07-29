@@ -8,6 +8,3 @@
     {{ .GetUpdateManySqlName }} = `{{ .GetUpdateManySqlContent }}`
 {{ if .GetDeleteSoftSqlName }}{{ .GetDeleteSoftSqlName }} = `{{ .GetDeleteSoftSqlContent }}`
 {{end}}    {{ .GetDeleteHardSqlName }} = `{{ .GetDeleteHardSqlContent }}`
-{{ range .GetSelectSql }}   {{ .Var }} = `{{ .Sql }}`
-{{ end }}
-

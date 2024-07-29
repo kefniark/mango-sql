@@ -11,6 +11,25 @@ import (
 //go:embed migrations/*.sql
 var sqlFS embed.FS
 
+func NewDBConfigWith(t *testing.T, data []byte, name string) *pgtestdb.Config {
+	t.Helper()
+
+	var migrator pgtestdb.Migrator = &SchemaMigrator{
+		Data: data,
+	}
+
+	conf := pgtestdb.Config{
+		DriverName: "postgres",
+		User:       "postgres",
+		Password:   "password",
+		Host:       "localhost",
+		Port:       "5433",
+		Options:    "sslmode=disable",
+	}
+
+	return pgtestdb.Custom(t, conf, migrator)
+}
+
 func NewDBConfig(t *testing.T) *pgtestdb.Config {
 	t.Helper()
 

@@ -1,24 +1,41 @@
 type DBClient struct {
     ctx *DBContext
-{{ range . }}   {{ .NameNormalized }}   *{{ .NameNormalized }}Queries
-{{ end }}}
+{{ range .Tables }}   // Handle database's {{ .Name }} records.
+	// Create, Update, Delete or Query {{ .NameNormalized }} Models with typed safe helpers
+	//
+	// Usage:
+	//   user, err := db.{{ .NameNormalized }}.FindById(id)
+	{{ .NameNormalized }}   *{{ .NameNormalized }}Queries
+{{ end }}{{ if len .Queries }}       	// User Custom SQL Queries
+	//
+	// Usage:
+	//   entities, err := db.Queries.MySqlRequests()
+	Queries *CustomQueries{{ end }}
+}
 
 func newClient(ctx *DBContext) *DBClient {
     return &DBClient{
         ctx: ctx,
-{{ range . }}       {{ .NameNormalized }}: &{{ .NameNormalized }}Queries{ ctx: ctx },
-{{ end }}   }
+{{ range .Tables }}       {{ .NameNormalized }}: &{{ .NameNormalized }}Queries{ ctx: ctx },
+{{ end }}{{ if len .Queries }}       Queries: &CustomQueries{ctx: ctx},{{ end }}   }
 }
 
+// Create a new instance of MangoSql
 func New(db *sqlx.DB) *DBClient {
-    client := newClient(&DBContext{
+    return newClient(&DBContext{
 		db:       db,
 		prepared: make(map[string]*sqlx.Stmt),
 		tx:       nil,
 	})
-    return client
 }
 
+// Create a new Sql transaction.
+// If any error or panic occurs inside, the transaction is automatically rollback
+//
+// Usage:
+//   err := db.Transaction(func(tx *DBClient) error {
+//     // ... can use tx. like db.
+//   })
 func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e error) {
 	if db.ctx.tx != nil {
 		return fmt.Errorf("nested transaction is not supported")
@@ -57,28 +74,61 @@ func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
 	return append(chunks, items)
 }
 
-func (ctx *DBContext) Get(dest interface{}, query string, args ...interface{}) error {
-	if ctx.tx != nil {
-		return ctx.tx.Get(dest, query, args...)
-	}
-	return ctx.db.Get(dest, query, args...)
+// Execute a Custom SQL query and get one row result.
+//
+// Usage:
+//   res := MyResult{}
+//   err := db.RawQueryOne(&res, sql, args...)
+func (db *DBClient) RawQueryOne(data interface{}, sql string, args ...interface{}) error {
+	return db.ctx.queryOne(data, sql, args...)
 }
 
-func (ctx *DBContext) Select(dest interface{}, query string, args ...interface{}) error {
-	if ctx.tx != nil {
-		return ctx.tx.Select(dest, query, args...)
-	}
-	return ctx.db.Select(dest, query, args...)
+// Execute a Custom SQL query and get many rows result.
+//
+// Usage:
+//   res := []MyResult{}
+//   err := db.RawQueryMany(&res, sql, args...)
+func (db *DBClient) RawQueryMany(data interface{}, sql string, args ...interface{}) error {
+	return db.ctx.queryMany(data, sql, args...)
 }
 
-func (ctx *DBContext) Exec(query string, args ...any) (sql.Result, error) {
-	if ctx.tx != nil {
-		return ctx.tx.Exec(query, args...)
-	}
-	return ctx.db.Exec(query, args...)
+// Execute a Custom SQL query without result.
+//
+// Usage:
+//   err := db.RawExec(sql, args...)
+func (db *DBClient) RawExec(sql string, args ...interface{}) error {
+	return db.ctx.exec(sql, args...)
 }
 
-func (ctx *DBContext) Stmt(query string) (*sqlx.Stmt, error) {
+func (ctx *DBContext) queryOne(data interface{}, sql string, args ...interface{}) error {
+	stmt, err := ctx.stmt(sql)
+	if err != nil {
+		return err
+	}
+
+	return stmt.Get(data, args...)
+}
+
+func (ctx *DBContext) queryMany(data interface{}, sql string, args ...interface{}) error {
+	stmt, err := ctx.stmt(sql)
+	if err != nil {
+		return err
+	}
+
+	return stmt.Select(data, args...)
+}
+
+func (ctx *DBContext) exec(sql string, args ...interface{}) error {
+	stmt, err := ctx.stmt(sql)
+	if err != nil {
+		return err
+	}
+
+	_, err = stmt.Exec(args...)
+	return err
+}
+
+func (ctx *DBContext) stmt(query string) (*sqlx.Stmt, error) {
 	if _, ok := ctx.prepared[query]; !ok {
 		stmt, err := ctx.db.Preparex(query)
 		if err != nil {
@@ -92,5 +142,21 @@ func (ctx *DBContext) Stmt(query string) (*sqlx.Stmt, error) {
 		return ctx.tx.Stmtx(stmt), nil
 	}
 	return stmt, nil
+}
+
+func first[T any](items []T, err error) (*T, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	if len(items) == 0 {
+		return nil, fmt.Errorf("not found")
+	}
+
+	return &items[0], nil
+}
+
+func limitFirst(cond SelectBuilder) SelectBuilder {
+	return cond.Offset(0).Limit(1)
 }
 

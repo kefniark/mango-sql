@@ -10,3 +10,4 @@ devenv.local.nix
 
 coverage.*
 bin/
+codegen/test/
