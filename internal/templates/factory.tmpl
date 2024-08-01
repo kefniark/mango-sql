@@ -48,8 +48,7 @@ func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e er
 
 	defer func() {
 		if p := recover(); p != nil {
-			tx.Rollback()
-			e = errors.New(p.(string))
+			e = errors.Join(errors.New(p.(string)), tx.Rollback())
 		}
 	}()
 
@@ -59,8 +58,7 @@ func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e er
 		tx:       tx,
 	})
 	if err = transaction(client); err != nil {
-		tx.Rollback()
-		return err
+		return errors.Join(err, tx.Rollback())
 	}
 
 	return tx.Commit()

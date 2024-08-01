@@ -21,7 +21,10 @@
   ];
 
   # https://devenv.sh/tests/
-  enterTest = "just test";
+  enterTest = ''
+  just generate
+  just test
+  '';
 
   # https://devenv.sh/services/
   # services.postgres.enable = true;

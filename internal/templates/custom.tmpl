@@ -10,9 +10,6 @@ type CustomQueries struct {
     //   entities, err := db.Queries.{{ .NameNormalized }}(
     //     // ... can use filters here (cf db.{{ .NameNormalized }}.Query.*)
     //   )
-    //
-    // SQL Statement:
-    //   {{ .SqlQuery }}
     func (q *CustomQueries) {{ .NameNormalized }}(filters ...WhereCondition) ([]{{ .NameNormalized }}Model, error ) {
         query := squirrel.Select("{{ .Select }}")
         query = query.From("{{ .From }}").PlaceholderFormat(squirrel.Dollar)

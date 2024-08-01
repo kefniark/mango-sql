@@ -393,6 +393,9 @@ func parseTable(schema *SQLSchema, stmt *tree.CreateTable) {
 			}
 
 			col.HasDefault = def.HasDefaultExpr()
+			if def.IsSerial {
+				col.HasDefault = true
+			}
 
 			if def.Unique {
 				tableSchema.Constraints = append(tableSchema.Constraints, &SQLTableConstraint{

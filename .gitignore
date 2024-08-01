@@ -11,3 +11,5 @@ devenv.local.nix
 coverage.*
 bin/
 codegen/test/
+
+tests/**/client.go
