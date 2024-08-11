@@ -4,7 +4,7 @@ var {{ .NameNormalized }}Fields = []string{ {{ range .Columns }} "{{ .Name }}",{
 
 {{ if .HasCompositeId }}
 type {{ .NameNormalized }}PrimaryKey struct {
-{{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}
 }
 {{ else }}
@@ -12,20 +12,20 @@ type {{ .NameNormalized }}PrimaryKey = {{ (index .ColumnIds 0).Type }}
 {{ end }}
 
 type {{ .NameNormalized }}Model struct {
-{{ range .Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ range .Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}}
 
 type {{ .NameNormalized }}Create struct {
 {{ if not .HasCompositeId }}
-{{ range .ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ range .ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}
 {{ else }}
-{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}
 {{ end }}}
 
 type {{ .NameNormalized }}Update struct {
-{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}}
 
 type {{ .NameNormalized }}Queries struct {
@@ -42,12 +42,27 @@ type {{ .NameNormalized }}Queries struct {
 }
 
 type {{ .NameNormalized }}Filters struct {
-{{ range.GetFieldFilters }}{{ .Name }} {{ .Model }}{{ .Name }}Filters
-    {{ end }}
+{{ range.GetFieldFilters }}{{ .Name }} {{ .Type }}[{{ .FieldType }}]
+{{ end }}
 }
 
-{{ range.GetFieldFilters }}type {{ .Model }}{{ .Name }}Filters struct {}
-{{ end }}
+func ({{ .NameNormalized }}Filters) Offset(val uint64) WhereCondition {
+    return func(cond SelectBuilder) SelectBuilder {
+		return cond.Offset(val)
+	}
+}
+
+func ({{ .NameNormalized }}Filters) Limit(val uint64) WhereCondition {
+    return func(cond SelectBuilder) SelectBuilder {
+		return cond.Limit(val)
+	}
+}
+
+func ({{ .NameNormalized }}Filters) Distinct() WhereCondition {
+    return func(cond SelectBuilder) SelectBuilder {
+		return cond.Distinct()
+	}
+}
 
 // Create a new {{ .NameNormalized }}Model instance (not automatically saved in database)
 //

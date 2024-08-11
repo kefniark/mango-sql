@@ -8,7 +8,7 @@ func (q *{{ .NameNormalized }}Queries) Insert(input {{ .NameNormalized }}Create)
 	sql := `{{ .GetCreateSqlContent }}`
 	data := &{{ .NameNormalized }}Model{}
 	// 
-	if err := q.ctx.queryOne(data, sql, {{ range .GetPrimaryInit }} {{ . }}, {{ end }} {{ range .ColumnsCreate }}input.{{ .NameNormalized }}, {{ end }}); err != nil {
+	if err := q.ctx.queryOne(data, sql, {{ range .GetPrimaryInit }} {{ . }}, {{ end }} {{ range .ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }}); err != nil {
 		return nil, err
 	}
 	return data, nil
@@ -237,12 +237,3 @@ func (q *{{ .Name }}Queries) {{ .Method }}s(ids ...{{ .Name }}PrimaryKey) ([]{{ 
 	})
 }
 {{ end }}{{ end }}
-
-{{ range .GetFilters }}
-// {{ .Comment }}
-func ({{ .Model }}Filters) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCondition {
-	return func(cond SelectBuilder) SelectBuilder {
-		return cond{{ .Sql }}
-	}
-}
-{{ end }}

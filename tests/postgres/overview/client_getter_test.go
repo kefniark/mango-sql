@@ -23,6 +23,8 @@ func TestFindManyWithFilters(t *testing.T) {
 	defer close()
 
 	users, err := db.User.FindMany(
+		db.User.Query.Email.NotIn("bob", "alice"),
+		db.Item.Query.Quantity.GreaterThanOrEqual(0),
 		db.User.Query.Distinct(),
 
 		// limit can be set before wheres

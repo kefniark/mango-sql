@@ -16,9 +16,36 @@ type DBClient struct {
 func newClient(ctx *DBContext) *DBClient {
     return &DBClient{
         ctx: ctx,
-{{ range .Tables }}       {{ .NameNormalized }}: &{{ .NameNormalized }}Queries{ ctx: ctx },
-{{ end }}{{ if len .Queries }}       Queries: &CustomQueries{ctx: ctx},{{ end }}   }
+		// Models
+{{ range .Tables }}       {{ .NameNormalized }}: &{{ .NameNormalized }}Queries{
+			ctx: ctx,
+			Query: {{ .NameNormalized }}Filters{
+{{ range.GetFieldFilters }}{{ if eq .Type "FilterGenericField" }}				{{ .Name }}: {{ .Type }}[{{ .FieldType }}]{ table: `{{ .Table }}`, field: `{{ .Field }}` },
+{{ else }}				{{ .Name }}: {{ .Type }}[{{ .FieldType }}]{ FilterGenericField: FilterGenericField[{{ .FieldType }}]{ table: `{{ .Table }}`, field: `{{ .Field }}`} },
+{{ end }}{{ end }}
+			},
+		},
+{{ end }}// Custom Queries
+	{{ if len .Queries }}       Queries: &CustomQueries{ctx: ctx},{{ end }}   }
 }
+
+{{ range .Filters }}type {{ .Name }}[T any] struct {
+{{ if eq .Name "FilterGenericField" }}
+	table string
+	field string
+{{ else }}
+	FilterGenericField[T]
+{{ end }}
+}
+
+{{ range .Filters }}// {{ .Comment }}
+func (f {{ .Model }}[T]) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCondition {
+	return func(cond SelectBuilder) SelectBuilder {
+		return cond{{ .Sql }}
+	}
+}
+
+{{ end }}{{ end }}
 
 // Create a new instance of MangoSql
 func New(db *sqlx.DB) *DBClient {
