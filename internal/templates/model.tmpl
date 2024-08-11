@@ -7,8 +7,13 @@ type {{ .NameNormalized }}PrimaryKey struct {
 {{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}
 }
+type {{ .NameNormalized }}PrimaryKeySerialized = {{ .NameNormalized }}PrimaryKey
 {{ else }}
 type {{ .NameNormalized }}PrimaryKey = {{ (index .ColumnIds 0).Type }}
+type {{ .NameNormalized }}PrimaryKeySerialized struct {
+{{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ end }}
+}
 {{ end }}
 
 type {{ .NameNormalized }}Model struct {

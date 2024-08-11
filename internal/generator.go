@@ -22,23 +22,18 @@ var templates embed.FS
 
 var plural = pluralize.NewClient()
 
-func Generate(schema *SQLSchema, contents io.Writer, pkg string) error {
-	headerTmpl, err := template.ParseFS(templates, "templates/header.tmpl")
+func Generate(schema *SQLSchema, contents io.Writer, pkg string, driver string) error {
+	headerTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/header_%s.tmpl", driver))
 	if err != nil {
 		return err
 	}
 
-	factoryTmpl, err := template.ParseFS(templates, "templates/factory.tmpl")
+	factoryTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/factory_%s.tmpl", driver))
 	if err != nil {
 		return err
 	}
 
-	// ctxConstTmpl, err := template.ParseFS(templates, "templates/ctx_const.tmpl")
-	// if err != nil {
-	// 	return err
-	// }
-
-	ctxTmpl, err := template.ParseFS(templates, "templates/ctx.tmpl")
+	ctxTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/ctx_%s.tmpl", driver))
 	if err != nil {
 		return err
 	}

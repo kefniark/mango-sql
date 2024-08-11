@@ -25,9 +25,9 @@ CREATE TABLE numeric_nullable (
 CREATE TABLE text (
     ID  SERIAL PRIMARY KEY,
     char1 CHARACTER NOT NULL,
-    char2 CHAR(10) NOT NULL,
-    varchar1 VARCHAR(10) NOT NULL,
-    varchar2 CHARACTER VARYING(10) NOT NULL,
+    char2 CHAR(20) NOT NULL,
+    varchar1 VARCHAR(20) NOT NULL,
+    varchar2 CHARACTER VARYING(20) NOT NULL,
     text TEXT NOT NULL,
     text2 BPCHAR NOT NULL
 );
@@ -35,9 +35,9 @@ CREATE TABLE text (
 CREATE TABLE text_nullable (
     ID  SERIAL PRIMARY KEY,
     char1 CHARACTER,
-    char2 CHAR(10),
-    varchar1 VARCHAR(10),
-    varchar2 CHARACTER VARYING(10),
+    char2 CHAR(20),
+    varchar1 VARCHAR(20),
+    varchar2 CHARACTER VARYING(20),
     text TEXT,
     text2 BPCHAR
 );

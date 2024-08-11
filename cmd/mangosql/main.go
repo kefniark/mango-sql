@@ -34,6 +34,11 @@ Example: mangosql --output db/file.go db/schema.sql`,
 				Value: "database",
 				Usage: "Go Package",
 			},
+			&cli.StringFlag{
+				Name:  "driver",
+				Value: "pgx",
+				Usage: "SQL Driver",
+			},
 		},
 		Action: func(ctx *cli.Context) error {
 			if ctx.NArg() <= 0 {
@@ -45,6 +50,7 @@ Example: mangosql --output db/file.go db/schema.sql`,
 				Src:     name,
 				Output:  ctx.String("output"),
 				Package: ctx.String("package"),
+				Driver:  ctx.String("driver"),
 			})
 		},
 	}
@@ -58,6 +64,7 @@ type GenerateOptions struct {
 	Src     string
 	Output  string
 	Package string
+	Driver  string
 }
 
 func generate(opts GenerateOptions) error {
@@ -103,7 +110,7 @@ func generate(opts GenerateOptions) error {
 	var b bytes.Buffer
 	contents := bufio.NewWriter(&b)
 
-	if err = internal.Generate(schema, contents, opts.Package); err != nil {
+	if err = internal.Generate(schema, contents, opts.Package, opts.Driver); err != nil {
 		return err
 	}
 

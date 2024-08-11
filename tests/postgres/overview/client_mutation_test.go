@@ -1,12 +1,13 @@
 package overview
 
 import (
+	"context"
 	"embed"
 	"errors"
 	"fmt"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5"
 	"github.com/kefniark/mango-sql/tests/helpers"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,13 +15,13 @@ import (
 func newBenchmarkDB(t *testing.B) (*DBClient, func()) {
 	t.Helper()
 	config := helpers.NewDBBenchConfig(t)
-	db, err := sqlx.Connect("postgres", config.URL())
+	db, err := pgx.Connect(context.Background(), config.URL())
 	if err != nil {
 		panic(err)
 	}
 
 	return New(db), func() {
-		db.Close()
+		db.Close(context.Background())
 	}
 }
 
@@ -33,13 +34,13 @@ func newTestDB(t *testing.T) (*DBClient, func()) {
 		panic(err)
 	}
 	config := helpers.NewDBConfigWith(t, data, "postgres")
-	db, err := sqlx.Connect("postgres", config.URL())
+	db, err := pgx.Connect(context.Background(), config.URL())
 	if err != nil {
 		panic(err)
 	}
 
 	return New(db), func() {
-		db.Close()
+		db.Close(context.Background())
 	}
 }
 
@@ -89,12 +90,12 @@ func TestDBUpdateMany(t *testing.T) {
 	assert.NoError(t, err)
 
 	_, err = db.User.UpdateMany([]UserUpdate{
-		{Id: ids[0], Email: "user1@email.com", Name: "user1-updated"},
-		{Id: ids[1], Email: "user2@email.com", Name: "user2-updated"},
+		{Id: ids[0].Id, Email: "user1@email.com", Name: "user1-updated"},
+		{Id: ids[1].Id, Email: "user2@email.com", Name: "user2-updated"},
 	})
 	assert.NoError(t, err)
 
-	user, err := db.User.FindById(ids[0])
+	user, err := db.User.FindById(ids[0].Id)
 	assert.NoError(t, err)
 
 	assert.Equal(t, "user1-updated", user.Name)

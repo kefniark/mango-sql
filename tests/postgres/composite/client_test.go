@@ -1,10 +1,11 @@
 package composite
 
 import (
+	"context"
 	"embed"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
+	"github.com/jackc/pgx/v5"
 	"github.com/kefniark/mango-sql/tests/helpers"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,13 +20,13 @@ func newTestDB(t *testing.T) (*DBClient, func()) {
 	}
 
 	config := helpers.NewDBConfigWith(t, data, "postgres.composite")
-	db, err := sqlx.Connect("postgres", config.URL())
+	db, err := pgx.Connect(context.Background(), config.URL())
 	if err != nil {
 		panic(err)
 	}
 
 	return New(db), func() {
-		db.Close()
+		db.Close(context.Background())
 	}
 }
 

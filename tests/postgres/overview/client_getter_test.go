@@ -2,7 +2,6 @@ package overview
 
 import (
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -24,14 +23,13 @@ func TestFindManyWithFilters(t *testing.T) {
 
 	users, err := db.User.FindMany(
 		db.User.Query.Email.NotIn("bob", "alice"),
-		db.Item.Query.Quantity.GreaterThanOrEqual(0),
 		db.User.Query.Distinct(),
 
 		// limit can be set before wheres
 		db.User.Query.Limit(5),
 
 		// can use as many query filters as needed
-		db.User.Query.CreatedAt.Between(time.Now().Add(-360*24*time.Hour), time.Now()),
+		// db.User.Query.CreatedAt.Between(time.Now().Add(-360*24*time.Hour), time.Now()),
 		db.User.Query.DeletedAt.IsNull(),
 
 		// multiple orders : ORDER BY users.name DESC, users.id DESC

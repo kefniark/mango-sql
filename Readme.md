@@ -21,17 +21,18 @@ This is inspired by [SQLC](https://github.com/sqlc-dev/sqlc) but pushes the idea
 * **Safe**: All the SQL queries use prepared statement to avoid injection
 * **Consistent**: Easy to use transaction API to rollback when an error occurs
 
-## Status
+## Getting Started
 
-This repostiroy is currently a WIP, features are still not complete and may likely change
+```sh
+# Install MangoSQL CLI
+go install github.com/kefniark/mango-sql/cmd/mangosql
 
-Roadmap:
-* Handle custom queries for advanced relations (join, aggregations, ...)
-* Handle sql enums
-* Handle sql views
-* Support more types and custom types (cf ulid, ...)
-* Support more driver and database Mysql/MariaDB/Sqlite3
-* Write benchmark to compare performance with existing Golang ORM
+# Use mango to generate a DB Client (by default ./database/client.go)
+mangosql ./database/schema.sql
+
+# Generated Go Code can be output somewhere else
+mangosql --output ./mydb/myclient.go --package mydb ./database/schema.sql
+```
 
 ## Example 
 
@@ -100,6 +101,18 @@ user.Save(db)
 // ...
 
 ```
+
+## Status
+
+This repository is currently a WIP, features are still not complete and may likely change
+
+Roadmap:
+* Handle custom queries for advanced relations (join, aggregations, ...)
+* Handle sql enums
+* Handle sql views
+* Support more types and custom types (cf ulid, ...)
+* Support more driver and database Mysql/MariaDB/Sqlite3
+* Write benchmark to compare performance with existing Golang ORM
 
 ## API
 

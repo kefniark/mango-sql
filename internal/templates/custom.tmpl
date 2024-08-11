@@ -25,9 +25,7 @@ type CustomQueries struct {
             return nil, err
         }
 
-        entries := []{{ .NameNormalized }}Model{}
-        err = q.ctx.queryMany(&entries, sql, args...)
-        return entries, err
+        return QueryMany[{{ .NameNormalized }}Model](q.ctx, sql, args...)
     }
 
     type {{ .NameNormalized }}Model struct {

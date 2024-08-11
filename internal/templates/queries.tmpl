@@ -6,12 +6,7 @@
 //   })
 func (q *{{ .NameNormalized }}Queries) Insert(input {{ .NameNormalized }}Create) (*{{ .NameNormalized }}Model, error) {
 	sql := `{{ .GetCreateSqlContent }}`
-	data := &{{ .NameNormalized }}Model{}
-	// 
-	if err := q.ctx.queryOne(data, sql, {{ range .GetPrimaryInit }} {{ . }}, {{ end }} {{ range .ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }}); err != nil {
-		return nil, err
-	}
-	return data, nil
+	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .GetPrimaryInit }} {{ . }}, {{ end }} {{ range .ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
 }
 
 // Batch Insert {{ .NameNormalized }}
@@ -20,9 +15,9 @@ func (q *{{ .NameNormalized }}Queries) Insert(input {{ .NameNormalized }}Create)
 //   entities, err := db.{{ .NameNormalized }}.InsertMany([]{{ .NameNormalized }}Create{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}Create) ([]{{ .NameNormalized }}PrimaryKey, error) {
+func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}Create) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
 	sql := `{{ .GetCreateManySqlContent }}`
-	ids := []{{ .NameNormalized }}PrimaryKey{}
+	ids := []{{ .NameNormalized }}PrimaryKeySerialized{}
 	for _, chunk := range chunkBy(inputs, 250) {
 		records := make([]{{ .NameNormalized }}Update, len(chunk))
 		for i, input := range chunk {
@@ -38,11 +33,11 @@ func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}
 			return nil, err
 		}
 
-		loopIds := []{{ .NameNormalized }}PrimaryKey{}
-		if err = q.ctx.queryMany(&loopIds, sql, data); err != nil {
+		if res, err := QueryMany[{{ .NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
 			return nil, err
+		} else {
+			ids = append(ids, res...)
 		}
-		ids = append(ids, loopIds...)
 	}
 
 	return ids, nil
@@ -56,11 +51,7 @@ func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}
 //   })
 func (q *{{ .NameNormalized }}Queries) Upsert(input {{ .NameNormalized }}Update) (*{{ .NameNormalized }}Model, error) {
 	sql := `{{ .GetUpsertSqlContent }}`
-	data := &{{ .NameNormalized }}Model{}
-	if err := q.ctx.queryOne(data, sql, {{ range .ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }}); err != nil {
-		return nil, err
-	}
-	return data, nil
+	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }});
 }
 
 // Batch Upsert {{ .NameNormalized }} (create or update if already exist)
@@ -69,20 +60,20 @@ func (q *{{ .NameNormalized }}Queries) Upsert(input {{ .NameNormalized }}Update)
 //   entities, err := db.{{ .NameNormalized }}.UpsertMany([]{{ .NameNormalized }}Update{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) UpsertMany(inputs []{{ .NameNormalized }}Update) ([]{{ .NameNormalized }}PrimaryKey, error) {
+func (q *{{ .NameNormalized }}Queries) UpsertMany(inputs []{{ .NameNormalized }}Update) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
 	sql := `{{ .GetUpsertManySqlContent }}`
-	ids := []{{ .NameNormalized }}PrimaryKey{}
+	ids := []{{ .NameNormalized }}PrimaryKeySerialized{}
 	for _, chunk := range chunkBy(inputs, 250) {
 		data, err := json.Marshal(chunk)
 		if err != nil {
 			return nil, err
 		}
 
-		loopIds := []{{ .NameNormalized }}PrimaryKey{}
-		if err = q.ctx.queryMany(&loopIds, sql, data); err != nil {
+		if res, err := QueryMany[{{ .NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
 			return nil, err
+		} else {
+			ids = append(ids, res...)
 		}
-		ids = append(ids, loopIds...)
 	}
 
 	return ids, nil
@@ -96,11 +87,7 @@ func (q *{{ .NameNormalized }}Queries) UpsertMany(inputs []{{ .NameNormalized }}
 //   })
 func (q *{{ .NameNormalized }}Queries) Update(input {{ .NameNormalized }}Update) (*{{ .NameNormalized }}Model, error) {
 	sql := `{{ .GetUpdateSqlContent }}`
-	data := &{{ .NameNormalized }}Model{}
-	if err := q.ctx.queryOne(data, sql, {{ range .ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }}); err != nil {
-		return nil, err
-	}
-	return data, nil
+	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }})
 }
 
 // Batch Update {{ .NameNormalized }}
@@ -109,20 +96,20 @@ func (q *{{ .NameNormalized }}Queries) Update(input {{ .NameNormalized }}Update)
 //   entities, err := db.{{ .NameNormalized }}.UpdateMany([]{{ .NameNormalized }}Update{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) UpdateMany(inputs []{{ .NameNormalized }}Update) ([]{{ .NameNormalized }}PrimaryKey, error) {
+func (q *{{ .NameNormalized }}Queries) UpdateMany(inputs []{{ .NameNormalized }}Update) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
 	sql := `{{ .GetUpdateManySqlContent }}`
-	ids := []{{ .NameNormalized }}PrimaryKey{}
+	ids := []{{ .NameNormalized }}PrimaryKeySerialized{}
 	for _, chunk := range chunkBy(inputs, 250) {
 		data, err := json.Marshal(chunk)
 		if err != nil {
 			return nil, err
 		}
 
-		loopIds := []{{ .NameNormalized }}PrimaryKey{}
-		if err = q.ctx.queryMany(&loopIds, sql, data); err != nil {
+		if res, err := QueryMany[{{ .NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
 			return nil, err
+		} else {
+			ids = append(ids, res...)
 		}
-		ids = append(ids, loopIds...)
 	}
 
 	return ids, nil
@@ -133,7 +120,7 @@ func (q *{{ .NameNormalized }}Queries) UpdateMany(inputs []{{ .NameNormalized }}
 // Usage:
 //   err := db.{{ .NameNormalized }}.DeleteSoft(id)
 func (q *{{ .NameNormalized }}Queries) DeleteSoft(id {{ .NameNormalized }}PrimaryKey) error {
-	return q.ctx.exec(`{{ .GetDeleteSoftSqlContent }}`, id)
+	return Exec(q.ctx, `{{ .GetDeleteSoftSqlContent }}`, id)
 }
 
 // Delete a {{ .NameNormalized }} (soft delete, data are still in the database)
@@ -149,7 +136,7 @@ func (q *{{ .NameNormalized }}Model) DeleteSoft(db *DBClient) error {
 // Usage:
 //   err := db.{{ .NameNormalized }}.DeleteHard(id)
 func (q *{{ .NameNormalized }}Queries) DeleteHard(id {{ .NameNormalized }}PrimaryKey) error {
-	return q.ctx.exec(`{{ .GetDeleteHardSqlContent }}`, id)
+	return Exec(q.ctx, `{{ .GetDeleteHardSqlContent }}`, id)
 }
 
 // Delete a {{ .NameNormalized }} (hard delete, data are removed from the database)
@@ -177,8 +164,8 @@ func (q *{{ .NameNormalized }}Queries) Count(filters ...WhereCondition) (int, er
 		return 0, err
 	}
 
-	count := 0
-	err = q.ctx.queryOne(&count, sql, args...)
+	var count int
+	err = QueryRow(q.ctx, &count, sql, args...)
 	return count, err
 }
 
@@ -199,9 +186,7 @@ func (q *{{ .NameNormalized }}Queries) FindMany(filters ...WhereCondition) ([]{{
 		return nil, err
 	}
 
-	entries := []{{ .NameNormalized }}Model{}
-	err = q.ctx.queryMany(&entries, sql, args...)
-	return entries, err
+	return QueryMany[{{ .NameNormalized }}Model](q.ctx, sql, args...)
 }
 
 // Find one {{ .NameNormalized }} records based on the provided conditions

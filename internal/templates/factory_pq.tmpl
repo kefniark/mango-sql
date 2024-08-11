@@ -102,30 +102,9 @@ func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
 // Execute a Custom SQL query and get one row result.
 //
 // Usage:
-//   res := MyResult{}
-//   err := db.RawQueryOne(&res, sql, args...)
-func (db *DBClient) RawQueryOne(data interface{}, sql string, args ...interface{}) error {
-	return db.ctx.queryOne(data, sql, args...)
-}
-
-// Execute a Custom SQL query and get many rows result.
-//
-// Usage:
-//   res := []MyResult{}
-//   err := db.RawQueryMany(&res, sql, args...)
-func (db *DBClient) RawQueryMany(data interface{}, sql string, args ...interface{}) error {
-	return db.ctx.queryMany(data, sql, args...)
-}
-
-// Execute a Custom SQL query without result.
-//
-// Usage:
-//   err := db.RawExec(sql, args...)
-func (db *DBClient) RawExec(sql string, args ...interface{}) error {
-	return db.ctx.exec(sql, args...)
-}
-
-func (ctx *DBContext) queryOne(data interface{}, sql string, args ...interface{}) error {
+//   data MyResult
+//   res, err := db.QueryRow(ctx, &data, sql, args...)
+func QueryRow(ctx *DBContext, data interface{}, sql string, args ...interface{}) error {
 	stmt, err := ctx.stmt(sql)
 	if err != nil {
 		return err
@@ -134,21 +113,44 @@ func (ctx *DBContext) queryOne(data interface{}, sql string, args ...interface{}
 	return stmt.Get(data, args...)
 }
 
-func (ctx *DBContext) queryMany(data interface{}, sql string, args ...interface{}) error {
+// Execute a Custom SQL query and get one row result.
+//
+// Usage:
+//   res, err := db.QueryOne[MyResult](ctx, sql, args...)
+func QueryOne[T any](ctx *DBContext, sql string, args ...interface{}) (*T, error) {
 	stmt, err := ctx.stmt(sql)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return stmt.Select(data, args...)
+	var data T
+	return &data, stmt.Get(&data, args...)
 }
 
-func (ctx *DBContext) exec(sql string, args ...interface{}) error {
+// Execute a Custom SQL query and get many rows result.
+//
+// Usage:
+//   res, err := db.QueryMany[MyResult](ctx, sql, args...)
+func QueryMany[T any](ctx *DBContext, sql string, args ...interface{}) ([]T, error) {
+	stmt, err := ctx.stmt(sql)
+	if err != nil {
+		return nil, err
+	}
+
+	var data []T
+	return data, stmt.Select(&data, args...)
+}
+
+// Execute a Custom SQL query without result.
+//
+// Usage:
+//   err := db.Exec(ctx, sql, args...)
+func Exec(ctx *DBContext, sql string, args ...interface{}) error {
 	stmt, err := ctx.stmt(sql)
 	if err != nil {
 		return err
 	}
-
+	
 	_, err = stmt.Exec(args...)
 	return err
 }

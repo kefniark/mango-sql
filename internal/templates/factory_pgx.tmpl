@@ -1,0 +1,204 @@
+type DBClient struct {
+    ctx *DBContext
+{{ range .Tables }}   // Handle database's {{ .Name }} records.
+	// Create, Update, Delete or Query {{ .NameNormalized }} Models with typed safe helpers
+	//
+	// Usage:
+	//   user, err := db.{{ .NameNormalized }}.FindById(id)
+	{{ .NameNormalized }}   *{{ .NameNormalized }}Queries
+{{ end }}{{ if len .Queries }}       	// User Custom SQL Queries
+	//
+	// Usage:
+	//   entities, err := db.Queries.MySqlRequests()
+	Queries *CustomQueries{{ end }}
+}
+
+func newClient(ctx *DBContext) *DBClient {
+    return &DBClient{
+        ctx: ctx,
+		// Models
+{{ range .Tables }}       {{ .NameNormalized }}: &{{ .NameNormalized }}Queries{
+			ctx: ctx,
+			Query: {{ .NameNormalized }}Filters{
+{{ range.GetFieldFilters }}{{ if eq .Type "FilterGenericField" }}				{{ .Name }}: {{ .Type }}[{{ .FieldType }}]{ table: `{{ .Table }}`, field: `{{ .Field }}` },
+{{ else }}				{{ .Name }}: {{ .Type }}[{{ .FieldType }}]{ FilterGenericField: FilterGenericField[{{ .FieldType }}]{ table: `{{ .Table }}`, field: `{{ .Field }}`} },
+{{ end }}{{ end }}
+			},
+		},
+{{ end }}// Custom Queries
+	{{ if len .Queries }}       Queries: &CustomQueries{ctx: ctx},{{ end }}   }
+}
+
+{{ range .Filters }}type {{ .Name }}[T any] struct {
+{{ if eq .Name "FilterGenericField" }}
+	table string
+	field string
+{{ else }}
+	FilterGenericField[T]
+{{ end }}
+}
+
+{{ range .Filters }}// {{ .Comment }}
+func (f {{ .Model }}[T]) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCondition {
+	return func(cond SelectBuilder) SelectBuilder {
+		return cond{{ .Sql }}
+	}
+}
+
+{{ end }}{{ end }}
+
+type DB_PGX interface {
+	Begin(ctx context.Context) (pgx.Tx, error)
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
+	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
+}
+
+// Create a new instance of MangoSql
+func New(db DB_PGX) *DBClient {
+    return newClient(&DBContext{
+		db:       db,
+		tx:       nil,
+	})
+}
+
+// Create a new Sql transaction.
+// If any error or panic occurs inside, the transaction is automatically rollback
+//
+// Usage:
+//   err := db.Transaction(func(tx *DBClient) error {
+//     // ... can use tx. like db.
+//   })
+func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e error) {
+	if db.ctx.tx != nil {
+		return fmt.Errorf("nested transaction is not supported")
+	}
+
+	tx, err := db.ctx.db.Begin(context.Background())
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		if p := recover(); p != nil {
+			e = errors.Join(errors.New(p.(string)), tx.Rollback(context.Background()))
+		}
+	}()
+
+	client := newClient(&DBContext{
+		db:       db.ctx.db,
+		tx:       tx,
+	})
+	if err = transaction(client); err != nil {
+		return errors.Join(err, tx.Rollback(context.Background()))
+	}
+
+	return tx.Commit(context.Background())
+}
+
+// Split slice into chunks of the given size
+func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
+	for chunkSize < len(items) {
+		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+	}
+	return append(chunks, items)
+}
+
+// Execute a Custom SQL query and get one row result.
+//
+// Usage:
+//   data MyResult
+//   res, err := db.QueryRow(ctx, &data, sql, args...)
+func QueryRow(ctx *DBContext, data interface{}, sql string, args ...interface{}) error {
+	db := ctx.db
+	if ctx.tx != nil {
+		db = ctx.tx
+	}
+
+	return db.QueryRow(context.Background(), sql, args...).Scan(data)
+}
+
+// Execute a Custom SQL query and get one row result.
+//
+// Usage:
+//   res, err := db.QueryOne[MyResult](ctx, sql, args...)
+func QueryOne[T any](ctx *DBContext, sql string, args ...interface{}) (*T, error) {
+	db := ctx.db
+	if ctx.tx != nil {
+		db = ctx.tx
+	}
+
+	rows, err := db.Query(context.Background(), sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[T])
+}
+
+// Execute a Custom SQL query and get many rows result.
+//
+// Usage:
+//   rows, err := db.QueryRows(ctx, &res, sql, args...)
+func QueryRows[T any](ctx *DBContext, sql string, args ...interface{}) ([]T, error) {
+	db := ctx.db
+	if ctx.tx != nil {
+		db = ctx.tx
+	}
+
+	rows, err := db.Query(context.Background(), sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return pgx.CollectRows(rows, pgx.RowToStructByName[T])
+}
+
+// Execute a Custom SQL query and get many rows result.
+//
+// Usage:
+//   res, err := db.QueryMany[MyResult](ctx, sql, args...)
+func QueryMany[T any](ctx *DBContext, sql string, args ...interface{}) ([]T, error) {
+	db := ctx.db
+	if ctx.tx != nil {
+		db = ctx.tx
+	}
+
+	rows, err := db.Query(context.Background(), sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return pgx.CollectRows(rows, pgx.RowToStructByName[T])
+}
+
+// Execute a Custom SQL query without result.
+//
+// Usage:
+//   err := db.Exec(ctx, sql, args...)
+func Exec(ctx *DBContext, sql string, args ...interface{}) error {
+	db := ctx.db
+	if ctx.tx != nil {
+		db = ctx.tx
+	}
+
+	_, err := db.Exec(context.Background(), sql, args...)
+	return err
+}
+
+func first[T any](items []T, err error) (*T, error) {
+	if err != nil {
+		return nil, err
+	}
+
+	if len(items) == 0 {
+		return nil, fmt.Errorf("not found")
+	}
+
+	return &items[0], nil
+}
+
+func limitFirst(cond SelectBuilder) SelectBuilder {
+	return cond.Offset(0).Limit(1)
+}
+

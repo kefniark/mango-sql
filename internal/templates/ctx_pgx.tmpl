@@ -1,0 +1,9 @@
+const (
+{{ .Const }}
+)
+
+type DBContext struct {
+    db DB_PGX
+    tx pgx.Tx
+}
+
