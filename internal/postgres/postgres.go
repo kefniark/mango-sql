@@ -48,11 +48,6 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		return err
 	}
 
-	// relationsTmpl, err := template.ParseFS(templates, "templates/relations.tmpl")
-	// if err != nil {
-	// 	return err
-	// }
-
 	customQueriesTmpl, err := template.ParseFS(templates, "templates/custom.tmpl")
 	if err != nil {
 		return err
@@ -343,11 +338,11 @@ func (table *PostgresTable) HasUpdateExtraUpdated() bool {
 }
 
 func (table *PostgresTable) GetTableName() string {
-	return fmt.Sprintf("%sTable", strcase.ToLowerCamel(plural.Singular(table.Name)))
+	return strcase.ToLowerCamel(plural.Singular(table.Name)) + "Table"
 }
 
 func (table *PostgresTable) GetCreateSqlName() string {
-	return fmt.Sprintf("%sCreateSql", strcase.ToLowerCamel(plural.Singular(table.Name)))
+	return strcase.ToLowerCamel(plural.Singular(table.Name)) + "CreateSql"
 }
 
 func (table *PostgresTable) GetCreateSqlContent() string {
@@ -383,7 +378,7 @@ func (table *PostgresTable) GetCreateSqlContent() string {
 }
 
 func (table *PostgresTable) GetCreateManySqlName() string {
-	return fmt.Sprintf("%sCreateManySql", strcase.ToLowerCamel(plural.Singular(table.Name)))
+	return strcase.ToLowerCamel(plural.Singular(table.Name)) + "CreateManySql"
 }
 
 func (table *PostgresTable) GetCreateManySqlContent() string {
@@ -470,7 +465,7 @@ func (table *PostgresTable) GetUpsertSqlContent() string {
 }
 
 func (table *PostgresTable) GetUpsertManySqlName() string {
-	return fmt.Sprintf("%sUpsertManySql", strcase.ToLowerCamel(plural.Singular(table.Name)))
+	return strcase.ToLowerCamel(plural.Singular(table.Name)) + "UpsertManySql"
 }
 
 func (table *PostgresTable) GetUpsertManySqlContent() string {

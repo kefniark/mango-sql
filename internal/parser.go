@@ -66,12 +66,10 @@ func ParseSchema(sql string) (*core.SQLSchema, error) {
 
 	w := &walk.AstWalker{
 		Fn: func(ctx interface{}, node interface{}) (stop bool) {
-			// log.Printf("node type %T", node)
 			switch stmt := node.(type) {
 			case *tree.CreateTable:
 				parseTable(schema, stmt)
 			case *tree.CreateIndex:
-				// fmt.Println("index name: ", stmt.Name)
 				refTable := schema.Tables[stmt.Table.TableName.Normalize()]
 				if stmt.Unique {
 					refTable.Constraints = append(refTable.Constraints, &core.SQLTableConstraint{
@@ -177,35 +175,26 @@ func findTableDeps(schema *core.SQLSchema, table *tree.SelectClause, macro []cor
 			case *tree.Subquery:
 			case *tree.ParenSelect:
 				walk(ctx, s.Select)
-				// fmt.Printf("FindSelect %T %s\n", s, s)
 			case *tree.Select:
 				walk(ctx, s.Select)
 			case *tree.TableName:
 				ctx.tables = append(ctx.tables, s.TableName.Normalize())
-				// fmt.Printf("FindTableName %T %s\n", s, s)
 			case *tree.AliasedTableExpr:
 				subCtx := &FindTableDepsCtx{}
 				walk(subCtx, s.Expr)
-				// fmt.Printf("FindAliasedTableExpr %T %s (%s|%s|%s)\n", s, s, s.Expr, s.As, subCtx.tables)
 				ctx.tables = append(ctx.tables, subCtx.tables...)
 				ctx.Tables = append(ctx.Tables, core.TableDeps{
 					Names: subCtx.tables,
 					As:    s.As.Alias.Normalize(),
 				})
 			case *tree.JoinTableExpr:
-				// fmt.Printf("FindJoinTableExpr %T %s (%s|%s|%s|%s)\n", s, s, s.JoinType, s.Left, s.Right, s.Cond)
-				// fmt.Printf("> Left %T %s\n", s.Left, s.Left)
-				// fmt.Printf("> Right %T %s\n", s.Right, s.Right)
 				walk(ctx, s.Left)
 				walk(ctx, s.Right)
 				query.From = s.String()
 			case *tree.Where:
-				// fmt.Println("Where", s)
 				if s != nil && s.Expr != nil {
 					query.Where = s.Expr.String()
 				}
-			case *tree.GroupBy:
-				// fmt.Println("GROUP BY", s)
 			default:
 				fmt.Printf("not supported : %T %s\n", s, s)
 			}
@@ -456,9 +445,7 @@ func parseTable(schema *core.SQLSchema, stmt *tree.CreateTable) {
 }
 
 func parseAlterTable(schema *core.SQLSchema, stmt *tree.AlterTable) {
-	// fmt.Println("alter table")
 	for _, cmd := range stmt.Cmds {
-		// fmt.Println("cmd type: ", cmd)
 		switch cmd := cmd.(type) {
 		case *tree.AlterTableDropColumn:
 			refTable := schema.Tables[stmt.Table.ToTableName().TableName.Normalize()]
@@ -520,7 +507,6 @@ func parseAlterTable(schema *core.SQLSchema, stmt *tree.AlterTable) {
 					TableColumns: NameListToStrings(fk.ToCols),
 				})
 			}
-
 		}
 	}
 }

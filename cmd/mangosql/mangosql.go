@@ -172,8 +172,10 @@ func parseMigrationFolder(folderName string) string {
 	return strings.Join(sql, "\n")
 }
 
-var parseGooseMetaUp = regexp.MustCompile(`-- \+goose Up`)
-var parseGooseMetaDown = regexp.MustCompile(`-- \+goose Down`)
+var (
+	parseGooseMetaUp   = regexp.MustCompile(`-- \+goose Up`)
+	parseGooseMetaDown = regexp.MustCompile(`-- \+goose Down`)
+)
 
 func parseMigrationFile(content string) string {
 	up := parseGooseMetaUp.FindStringIndex(content)

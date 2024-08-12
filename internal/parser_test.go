@@ -15,7 +15,7 @@ func TestParseTableCreate(t *testing.T) {
 	`)
 	assert.NoError(t, err)
 
-	//table
+	// table
 	assert.Equal(t, 1, len(schema.Tables))
 	assert.Equal(t, "orders", schema.Tables["orders"].Name)
 

@@ -104,7 +104,9 @@ user.Save(db)
 
 ## Status
 
-This repository is currently a WIP, features are still not complete and may likely change
+This repository is currently a WIP, features are still not complete and may likely change.
+
+Also the current SQL Parser being based on CockroachDB, some postgres specific syntax may be not supported.
 
 **Roadmap**:
 * [x] Handle custom user queries
@@ -113,5 +115,15 @@ This repository is currently a WIP, features are still not complete and may like
 * [ ] Support more types and custom types (cf ulid, ...)
 * [ ] Support more driver and database Mysql/MariaDB/Sqlite3
     * [x] For postgres support both `pq + sqlc` or `pgx`
+    * [ ] For Mysql/MariaDB `go-sql-driver`
+    * [ ] For Sqlite ``
+* [ ] Support easier logging and profiling
+* [ ] Support for Listen/Notify on pgx
+* [ ] Support DB Introspection to automatically extract schema from running database
+* [ ] Write Documentation
+    * [ ] Pick a static doc generator website
+    * [ ] Setup
 * [ ] Write benchmark to compare performance with existing Golang ORM
     * [x] Wrote basic comparison (insert, bulk insert, select)
+    * [ ] Add more use cases (select with lot of data, upsert, complex query with joins)
+    * [ ] Generate diagrams out of benchmark data

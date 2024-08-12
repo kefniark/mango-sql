@@ -5,20 +5,26 @@ import (
 	"strings"
 )
 
+const (
+	FilterNumericField = "FilterNumericField"
+	FilterStringField  = "FilterStringField"
+	FilterArrayField   = "FilterArrayField"
+	FilterGenericField = "FilterGenericField"
+)
+
 func GetNormalizedTypeFilter(col *PostgresColumn) string {
-	// fmt.Println(col.Type, col.TypeSql)
 	if strings.HasPrefix(col.Type, "[]") {
-		return "FilterArrayField"
+		return FilterArrayField
 	} else if strings.Contains(strings.ToLower(col.Type), "string") {
-		return "FilterStringField"
+		return FilterStringField
 	} else if strings.Contains(strings.ToLower(col.Type), "int") {
-		return "FilterNumericField"
+		return FilterNumericField
 	} else if strings.Contains(strings.ToLower(col.Type), "float") {
-		return "FilterNumericField"
+		return FilterNumericField
 	} else if strings.Contains(strings.ToLower(col.Type), "time") {
-		return "FilterNumericField"
+		return FilterNumericField
 	}
-	return "FilterGenericField"
+	return FilterGenericField
 }
 
 func (table *PostgresTable) GetFieldFilters() []SelectFieldFilter {

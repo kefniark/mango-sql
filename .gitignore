@@ -9,6 +9,7 @@ devenv.local.nix
 .pre-commit-config.yaml
 
 coverage.*
+*.test
 bin/
 codegen/test/
 

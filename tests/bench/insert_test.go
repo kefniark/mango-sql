@@ -33,8 +33,6 @@ func newBenchmarkDBPQ(t *testing.B) (*driver_pq.DBClient, func()) {
 func newBenchmarkDBPGX(t *testing.B) (*driver_pgx.DBClient, func()) {
 	t.Helper()
 	config := helpers.NewDBBenchConfig(t)
-	// db, err := sqlx.Connect("pgx", config.URL())
-
 	db, err := pgx.Connect(context.Background(), config.URL())
 	if err != nil {
 		panic(err)
@@ -75,7 +73,7 @@ type User struct {
 }
 
 func benchmarkInsertOne(t *testing.B) {
-	db, close := newBenchmarkDBPQ(t)
+	dbPq, close := newBenchmarkDBPQ(t)
 	defer close()
 	dbPgx, closePgx := newBenchmarkDBPGX(t)
 	defer closePgx()
@@ -84,7 +82,7 @@ func benchmarkInsertOne(t *testing.B) {
 
 	t.Run("Insert One - Mango PQ", func(t *testing.B) {
 		for i := 0; i < t.N; i++ {
-			_, err := db.User.Insert(driver_pq.UserCreate{Name: "John Doe", Email: "john@email.com"})
+			_, err := dbPq.User.Insert(driver_pq.UserCreate{Name: "John Doe", Email: "john@email.com"})
 			assert.NoError(t, err)
 		}
 	})
@@ -215,7 +213,6 @@ func benchmarkSelect(t *testing.B) {
 			}
 		}
 	})
-
 }
 
 func Benchmark(t *testing.B) {
