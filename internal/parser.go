@@ -10,9 +10,10 @@ import (
 	"github.com/auxten/postgresql-parser/pkg/sql/sem/tree"
 	"github.com/auxten/postgresql-parser/pkg/walk"
 	"github.com/iancoleman/strcase"
+	"github.com/kefniark/mango-sql/internal/core"
 )
 
-func ParseQueries(schema *SQLSchema, sql string) error {
+func ParseQueries(schema *core.SQLSchema, sql string) error {
 	stmts, err := parser.Parse(sql)
 	if err != nil {
 		return fmt.Errorf("schema parsing error: %w", err)
@@ -37,10 +38,10 @@ func ParseQueries(schema *SQLSchema, sql string) error {
 
 var parseMacro = regexp.MustCompile(`(?m)-- (?P<method>.*):(?P<name>.*)(?P<sql>[^;]*);`)
 
-func findQueriesMacro(sql string) []QueryMacro {
-	macro := []QueryMacro{}
+func findQueriesMacro(sql string) []core.QueryMacro {
+	macro := []core.QueryMacro{}
 	for _, res := range parseMacro.FindAllStringSubmatch(sql, -1) {
-		macro = append(macro, QueryMacro{
+		macro = append(macro, core.QueryMacro{
 			Method: res[1],
 			Name:   res[2],
 			Query:  normalizeSql(res[3]),
@@ -53,14 +54,14 @@ func normalizeSql(sql string) string {
 	return strings.ToLower(strings.Join(strings.Fields(sql), ""))
 }
 
-func ParseSchema(sql string) (*SQLSchema, error) {
+func ParseSchema(sql string) (*core.SQLSchema, error) {
 	stmts, err := parser.Parse(sql)
 	if err != nil {
 		return nil, fmt.Errorf("schema parsing error: %w", err)
 	}
 
-	schema := &SQLSchema{
-		Tables: make(map[string]*SQLTable),
+	schema := &core.SQLSchema{
+		Tables: make(map[string]*core.SQLTable),
 	}
 
 	w := &walk.AstWalker{
@@ -73,13 +74,13 @@ func ParseSchema(sql string) (*SQLSchema, error) {
 				// fmt.Println("index name: ", stmt.Name)
 				refTable := schema.Tables[stmt.Table.TableName.Normalize()]
 				if stmt.Unique {
-					refTable.Constraints = append(refTable.Constraints, &SQLTableConstraint{
+					refTable.Constraints = append(refTable.Constraints, &core.SQLTableConstraint{
 						Name:    stmt.Name.Normalize(),
 						Columns: NamesToStrings(stmt.Columns),
 						Type:    "UNIQUE",
 					})
 				}
-				refTable.Indexes = append(refTable.Indexes, &SQLTableIndex{
+				refTable.Indexes = append(refTable.Indexes, &core.SQLTableIndex{
 					Name:    stmt.Name.Normalize(),
 					Columns: NamesToStrings(stmt.Columns),
 				})
@@ -106,7 +107,7 @@ func ParseSchema(sql string) (*SQLSchema, error) {
 		for _, ref := range table.References {
 			refTable := schema.Tables[ref.Table]
 
-			refTable.Referenced = append(refTable.Referenced, &SQLTableReference{
+			refTable.Referenced = append(refTable.Referenced, &core.SQLTableReference{
 				Name:         ref.Name,
 				Columns:      ref.TableColumns,
 				Table:        table.Name,
@@ -134,7 +135,7 @@ func NamesToStrings(names tree.IndexElemList) []string {
 	return columns
 }
 
-func parseSelectQuery(schema *SQLSchema, stmt *tree.SelectClause, macro []QueryMacro) {
+func parseSelectQuery(schema *core.SQLSchema, stmt *tree.SelectClause, macro []core.QueryMacro) {
 	query := findTableDeps(schema, stmt, macro)
 	if query == nil {
 		return
@@ -143,7 +144,7 @@ func parseSelectQuery(schema *SQLSchema, stmt *tree.SelectClause, macro []QueryM
 	schema.Queries = append(schema.Queries, *query)
 }
 
-func findQueryMacro(query string, macro []QueryMacro) *QueryMacro {
+func findQueryMacro(query string, macro []core.QueryMacro) *core.QueryMacro {
 	for _, m := range macro {
 		if strings.HasPrefix(normalizeSql(query), m.Query) {
 			return &m
@@ -152,8 +153,8 @@ func findQueryMacro(query string, macro []QueryMacro) *QueryMacro {
 	return nil
 }
 
-func findTableDeps(schema *SQLSchema, table *tree.SelectClause, macro []QueryMacro) *SQLQuery {
-	query := SQLQuery{
+func findTableDeps(schema *core.SQLSchema, table *tree.SelectClause, macro []core.QueryMacro) *core.SQLQuery {
+	query := core.SQLQuery{
 		Query: table.String(),
 	}
 
@@ -187,7 +188,7 @@ func findTableDeps(schema *SQLSchema, table *tree.SelectClause, macro []QueryMac
 				walk(subCtx, s.Expr)
 				// fmt.Printf("FindAliasedTableExpr %T %s (%s|%s|%s)\n", s, s, s.Expr, s.As, subCtx.tables)
 				ctx.tables = append(ctx.tables, subCtx.tables...)
-				ctx.Tables = append(ctx.Tables, TableDeps{
+				ctx.Tables = append(ctx.Tables, core.TableDeps{
 					Names: subCtx.tables,
 					As:    s.As.Alias.Normalize(),
 				})
@@ -241,7 +242,7 @@ func findTableDeps(schema *SQLSchema, table *tree.SelectClause, macro []QueryMac
 	query.Select = strings.Join(names, ", ")
 	query.SelectOriginal = query.Select
 	query.SelectFields = slices.Compact(query.SelectFields)
-	slices.SortFunc(query.SelectFields, func(i, j *SQLColumn) int {
+	slices.SortFunc(query.SelectFields, func(i, j *core.SQLColumn) int {
 		return i.Order - j.Order
 	})
 
@@ -254,10 +255,10 @@ func findTableDeps(schema *SQLSchema, table *tree.SelectClause, macro []QueryMac
 	return &query
 }
 
-func resolveTableColumns(field string, as string, tables []TableDeps, schema *SQLSchema, i int) []*SQLColumn {
+func resolveTableColumns(field string, as string, tables []core.TableDeps, schema *core.SQLSchema, i int) []*core.SQLColumn {
 	prefix := ""
 	name := strings.TrimSpace(field)
-	columns := []*SQLColumn{}
+	columns := []*core.SQLColumn{}
 
 	if strings.Contains(field, ".") {
 		split := strings.Split(field, ".")
@@ -299,7 +300,7 @@ func resolveTableColumns(field string, as string, tables []TableDeps, schema *SQ
 					if j == 0 {
 						as = column.Name
 					}
-					columns = append(columns, &SQLColumn{
+					columns = append(columns, &core.SQLColumn{
 						Table:    t,
 						TableAs:  tableName,
 						Ref:      strcase.ToCamel(fmt.Sprintf("%s.%s", tableName, column.Name)),
@@ -318,7 +319,7 @@ func resolveTableColumns(field string, as string, tables []TableDeps, schema *SQ
 					as = field.Name
 				}
 
-				columns = append(columns, &SQLColumn{
+				columns = append(columns, &core.SQLColumn{
 					Table:    name,
 					TableAs:  tableName,
 					Ref:      strcase.ToCamel(fmt.Sprintf("%s.%s", tableName, field.Name)),
@@ -354,7 +355,7 @@ func resolveTableColumns(field string, as string, tables []TableDeps, schema *SQ
 			cleanupName = strcase.ToCamel(as)
 		}
 
-		columns = append(columns, &SQLColumn{
+		columns = append(columns, &core.SQLColumn{
 			Name:     name,
 			As:       as,
 			Ref:      strcase.ToCamel(cleanupName),
@@ -368,17 +369,17 @@ func resolveTableColumns(field string, as string, tables []TableDeps, schema *SQ
 	return columns
 }
 
-func parseTable(schema *SQLSchema, stmt *tree.CreateTable) {
-	tableSchema := &SQLTable{
+func parseTable(schema *core.SQLSchema, stmt *tree.CreateTable) {
+	tableSchema := &core.SQLTable{
 		Name:    stmt.Table.TableName.Normalize(),
-		Columns: make(map[string]*SQLColumn),
+		Columns: make(map[string]*core.SQLColumn),
 		Order:   len(schema.Tables) + 1,
 	}
 
 	for _, def := range stmt.Defs {
 		switch def := def.(type) {
 		case *tree.ColumnTableDef:
-			col := &SQLColumn{
+			col := &core.SQLColumn{
 				Name:     def.Name.Normalize(),
 				Type:     def.Type.String(),
 				TypeSql:  def.Type.SQLString(),
@@ -398,12 +399,12 @@ func parseTable(schema *SQLSchema, stmt *tree.CreateTable) {
 			}
 
 			if def.Unique {
-				tableSchema.Constraints = append(tableSchema.Constraints, &SQLTableConstraint{
+				tableSchema.Constraints = append(tableSchema.Constraints, &core.SQLTableConstraint{
 					Name:    def.UniqueConstraintName.Normalize(),
 					Columns: []string{def.Name.Normalize()},
 					Type:    "UNIQUE",
 				})
-				tableSchema.Indexes = append(tableSchema.Indexes, &SQLTableIndex{
+				tableSchema.Indexes = append(tableSchema.Indexes, &core.SQLTableIndex{
 					Name:    def.UniqueConstraintName.Normalize(),
 					Columns: []string{def.Name.Normalize()},
 				})
@@ -411,19 +412,19 @@ func parseTable(schema *SQLSchema, stmt *tree.CreateTable) {
 
 			if def.PrimaryKey.IsPrimaryKey {
 				tableSchema.Columns[def.Name.Normalize()].Nullable = false
-				tableSchema.Constraints = append(tableSchema.Constraints, &SQLTableConstraint{
+				tableSchema.Constraints = append(tableSchema.Constraints, &core.SQLTableConstraint{
 					Name:    "",
 					Columns: []string{def.Name.Normalize()},
 					Type:    "PRIMARY",
 				})
-				tableSchema.Indexes = append(tableSchema.Indexes, &SQLTableIndex{
+				tableSchema.Indexes = append(tableSchema.Indexes, &core.SQLTableIndex{
 					Name:    "",
 					Columns: []string{def.Name.Normalize()},
 				})
 			}
 
 			if def.References.Table != nil {
-				tableSchema.References = append(tableSchema.References, &SQLTableReference{
+				tableSchema.References = append(tableSchema.References, &core.SQLTableReference{
 					Name:         def.References.ConstraintName.Normalize(),
 					Columns:      []string{def.Name.Normalize()},
 					Table:        def.References.Table.TableName.Normalize(),
@@ -431,17 +432,17 @@ func parseTable(schema *SQLSchema, stmt *tree.CreateTable) {
 				})
 			}
 		case *tree.UniqueConstraintTableDef:
-			tableSchema.Constraints = append(tableSchema.Constraints, &SQLTableConstraint{
+			tableSchema.Constraints = append(tableSchema.Constraints, &core.SQLTableConstraint{
 				Name:    def.Name.Normalize(),
 				Columns: NamesToStrings(def.Columns),
 				Type:    "UNIQUE",
 			})
-			tableSchema.Indexes = append(tableSchema.Indexes, &SQLTableIndex{
+			tableSchema.Indexes = append(tableSchema.Indexes, &core.SQLTableIndex{
 				Name:    def.Name.Normalize(),
 				Columns: NamesToStrings(def.Columns),
 			})
 		case *tree.CheckConstraintTableDef:
-			tableSchema.Constraints = append(tableSchema.Constraints, &SQLTableConstraint{
+			tableSchema.Constraints = append(tableSchema.Constraints, &core.SQLTableConstraint{
 				Name:    def.Name.Normalize(),
 				Columns: []string{def.Expr.String()},
 				Type:    "CHECK",
@@ -454,7 +455,7 @@ func parseTable(schema *SQLSchema, stmt *tree.CreateTable) {
 	schema.Tables[tableSchema.Name] = tableSchema
 }
 
-func parseAlterTable(schema *SQLSchema, stmt *tree.AlterTable) {
+func parseAlterTable(schema *core.SQLSchema, stmt *tree.AlterTable) {
 	// fmt.Println("alter table")
 	for _, cmd := range stmt.Cmds {
 		// fmt.Println("cmd type: ", cmd)
@@ -470,7 +471,7 @@ func parseAlterTable(schema *SQLSchema, stmt *tree.AlterTable) {
 		case *tree.AlterTableAddColumn:
 			refTable := schema.Tables[stmt.Table.ToTableName().TableName.Normalize()]
 
-			refTable.Columns[cmd.ColumnDef.Name.Normalize()] = &SQLColumn{
+			refTable.Columns[cmd.ColumnDef.Name.Normalize()] = &core.SQLColumn{
 				Name:     cmd.ColumnDef.Name.Normalize(),
 				Type:     cmd.ColumnDef.Type.String(),
 				Nullable: cmd.ColumnDef.Nullable.Nullability != tree.NotNull,
@@ -485,11 +486,11 @@ func parseAlterTable(schema *SQLSchema, stmt *tree.AlterTable) {
 		case *tree.AlterTableDropConstraint:
 			refTable := schema.Tables[stmt.Table.ToTableName().TableName.Normalize()]
 
-			refTable.Constraints = slices.DeleteFunc(refTable.Constraints, func(c *SQLTableConstraint) bool {
+			refTable.Constraints = slices.DeleteFunc(refTable.Constraints, func(c *core.SQLTableConstraint) bool {
 				return c.Name == cmd.Constraint.Normalize()
 			})
 
-			refTable.Indexes = slices.DeleteFunc(refTable.Indexes, func(c *SQLTableIndex) bool {
+			refTable.Indexes = slices.DeleteFunc(refTable.Indexes, func(c *core.SQLTableIndex) bool {
 				return c.Name == cmd.Constraint.Normalize()
 			})
 
@@ -499,12 +500,12 @@ func parseAlterTable(schema *SQLSchema, stmt *tree.AlterTable) {
 			switch cmd.ConstraintDef.(type) {
 			case *tree.UniqueConstraintTableDef:
 				unique := cmd.ConstraintDef.(*tree.UniqueConstraintTableDef)
-				refTable.Constraints = append(refTable.Constraints, &SQLTableConstraint{
+				refTable.Constraints = append(refTable.Constraints, &core.SQLTableConstraint{
 					Name:    unique.Name.Normalize(),
 					Columns: NamesToStrings(unique.Columns),
 					Type:    "UNIQUE",
 				})
-				refTable.Indexes = append(refTable.Indexes, &SQLTableIndex{
+				refTable.Indexes = append(refTable.Indexes, &core.SQLTableIndex{
 					Name:    unique.Name.Normalize(),
 					Columns: NamesToStrings(unique.Columns),
 				})
@@ -512,7 +513,7 @@ func parseAlterTable(schema *SQLSchema, stmt *tree.AlterTable) {
 			case *tree.ForeignKeyConstraintTableDef:
 				fk := cmd.ConstraintDef.(*tree.ForeignKeyConstraintTableDef)
 
-				refTable.References = append(refTable.References, &SQLTableReference{
+				refTable.References = append(refTable.References, &core.SQLTableReference{
 					Name:         fk.Name.Normalize(),
 					Columns:      NameListToStrings(fk.FromCols),
 					Table:        fk.Table.TableName.Normalize(),
@@ -526,16 +527,5 @@ func parseAlterTable(schema *SQLSchema, stmt *tree.AlterTable) {
 
 type FindTableDepsCtx struct {
 	tables []string
-	Tables []TableDeps
-}
-
-type TableDeps struct {
-	Names []string
-	As    string
-}
-
-type QueryMacro struct {
-	Method string
-	Name   string
-	Query  string
+	Tables []core.TableDeps
 }

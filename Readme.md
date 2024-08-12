@@ -106,44 +106,12 @@ user.Save(db)
 
 This repository is currently a WIP, features are still not complete and may likely change
 
-Roadmap:
-* Handle custom queries for advanced relations (join, aggregations, ...)
-* Handle sql enums
-* Handle sql views
-* Support more types and custom types (cf ulid, ...)
-* Support more driver and database Mysql/MariaDB/Sqlite3
-* Write benchmark to compare performance with existing Golang ORM
-
-## API
-
-Here is the list of all the auto-generated methods for your tables:
-
-## Getters
-* db.{Table}.FindById(id)  (*T, error)
-* db.{Table}.FindByIds(id) ([]T, error)
-* db.{Table}.FindUnique(...filters) (*T, error)
-* db.{Table}.FindMany(...filters) ([]T, error)
-* db.{Table}.Count(...filters) (int, error)
-
-## Mutations
-* db.{Table}.Create(input) (*T, error)
-* db.{Table}.CreateMany(inputs) ([]T, error)
-* db.{Table}.Update(input) (*T, error)
-* db.{Table}.UpdateMany(inputs) ([]T, error)
-* db.{Table}.Upsert(input) (*T, error)
-* db.{Table}.UpsertMany(inputs) ([]T, error)
-* db.{Table}.DeleteSoft(id)
-* db.{Table}.DeleteHard(id)
-
-## Query Filters
-* db.{Table}.Query.{Field}.Equal(input)
-* db.{Table}.Query.{Field}.NotEqual(input)
-* db.{Table}.Query.{Field}.In(input)
-* db.{Table}.Query.{Field}.NotIn(input)
-* db.{Table}.Query.{Field}.Like(input)
-* db.{Table}.Query.{Field}.MoreThan(input)
-* db.{Table}.Query.{Field}.LessThan(input)
-* db.{Table}.Query.{Field}.Between(low, high)
-* db.{Table}.Query.Offset(offset)
-* db.{Table}.Query.Limit(limit)
-* db.{Table}.Query.OrderBy{Field}()
+**Roadmap**:
+* [x] Handle custom user queries
+* [ ] Handle sql enums
+* [ ] Handle sql views
+* [ ] Support more types and custom types (cf ulid, ...)
+* [ ] Support more driver and database Mysql/MariaDB/Sqlite3
+    * [x] For postgres support both `pq + sqlc` or `pgx`
+* [ ] Write benchmark to compare performance with existing Golang ORM
+    * [x] Wrote basic comparison (insert, bulk insert, select)

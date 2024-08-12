@@ -12,19 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func newBenchmarkDB(t *testing.B) (*DBClient, func()) {
-	t.Helper()
-	config := helpers.NewDBBenchConfig(t)
-	db, err := pgx.Connect(context.Background(), config.URL())
-	if err != nil {
-		panic(err)
-	}
-
-	return New(db), func() {
-		db.Close(context.Background())
-	}
-}
-
 //go:embed *.sql
 var sqlFS embed.FS
 
@@ -236,83 +223,4 @@ func TestTransactionInsertRollbackPanic(t *testing.T) {
 	val, err := db.User.Count()
 	assert.NoError(t, err)
 	assert.Equal(t, 4, val)
-}
-
-func BenchmarkInsert(t *testing.B) {
-	sizes := []int{1, 50, 500, 5000}
-
-	for _, size := range sizes {
-		t.Run(fmt.Sprintf("Create %d users (single insert)", size), func(t *testing.B) {
-			db, close := newBenchmarkDB(t)
-			defer close()
-
-			for i := 0; i < size; i++ {
-				_, err := db.User.Insert(UserCreate{Name: "user1", Email: "user1@localhost"})
-				if err != nil {
-					assert.NoError(t, err)
-				}
-			}
-
-			val, err := db.User.Count()
-			assert.NoError(t, err)
-			assert.Equal(t, size+4, val)
-		})
-
-		t.Run(fmt.Sprintf("Create %d users (inserts in transaction)", size), func(t *testing.B) {
-			db, close := newBenchmarkDB(t)
-			defer close()
-
-			err := db.Transaction(func(tx *DBClient) error {
-				for i := 0; i < size; i++ {
-					_, err := db.User.Insert(UserCreate{Name: "user1", Email: "user1@localhost"})
-					if err != nil {
-						return err
-					}
-				}
-				return nil
-			})
-
-			assert.NoError(t, err)
-			val, err := db.User.Count()
-			assert.NoError(t, err)
-			assert.Equal(t, size+4, val)
-		})
-
-		t.Run(fmt.Sprintf("Create %d users (batch inserts)", size), func(t *testing.B) {
-			db, close := newBenchmarkDB(t)
-			defer close()
-
-			users := make([]UserCreate, size)
-			for i := 0; i < size; i++ {
-				users[i] = UserCreate{Name: "user1", Email: "user1@localhost"}
-			}
-
-			_, err := db.User.InsertMany(users)
-			assert.NoError(t, err)
-
-			val, err := db.User.Count()
-			assert.NoError(t, err)
-			assert.Equal(t, size+4, val)
-		})
-
-		t.Run(fmt.Sprintf("Create %d users (batch inserts in transaction)", size), func(t *testing.B) {
-			db, close := newBenchmarkDB(t)
-			defer close()
-
-			users := make([]UserCreate, size)
-			for i := 0; i < size; i++ {
-				users[i] = UserCreate{Name: "user1", Email: "user1@localhost"}
-			}
-
-			err := db.Transaction(func(tx *DBClient) error {
-				_, err := db.User.InsertMany(users)
-				return err
-			})
-			assert.NoError(t, err)
-
-			val, err := db.User.Count()
-			assert.NoError(t, err)
-			assert.Equal(t, size+4, val)
-		})
-	}
 }

@@ -1,4 +1,4 @@
-package internal
+package core
 
 import "fmt"
 
@@ -85,4 +85,15 @@ func (s *SQLSchema) Debug() {
 			fmt.Printf("  ref: %s %s => %s(%s)\n", ref.Name, ref.Columns, ref.Table, ref.TableColumns)
 		}
 	}
+}
+
+type TableDeps struct {
+	Names []string
+	As    string
+}
+
+type QueryMacro struct {
+	Method string
+	Name   string
+	Query  string
 }
