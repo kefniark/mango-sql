@@ -55,6 +55,7 @@ func normalizeSql(sql string) string {
 }
 
 func ParseSchema(sql string) (*core.SQLSchema, error) {
+	sql = normalize(sql)
 	stmts, err := parser.Parse(sql)
 	if err != nil {
 		return nil, fmt.Errorf("schema parsing error: %w", err)
