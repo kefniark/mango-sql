@@ -21,6 +21,7 @@ generate:
     # bench
     mkdir -p ./tests/bench/pq
     mkdir -p ./tests/bench/pgx
+    mkdir -p ./tests/bench/sqlite
     go run ./cmd/mangosql/ --output ./tests/bench/pq/client.go --package pq --driver pq ./tests/bench/schema.sql
     go run ./cmd/mangosql/ --output ./tests/bench/pgx/client.go --package pgx ./tests/bench/schema.sql
     go run ./cmd/mangosql/ --output ./tests/bench/sqlite/client.go --package pq --driver pq ./tests/bench/schema.sqlite.sql
