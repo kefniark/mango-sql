@@ -14,6 +14,7 @@ generate:
     go run ./cmd/mangosql/ --output ./tests/postgres/auto-increment/client.go --package autoincrement ./tests/postgres/auto-increment/schema.sql
     go run ./cmd/mangosql/ --output ./tests/postgres/composite/client.go --package composite ./tests/postgres/composite/schema.sql
 
+    go run ./cmd/mangosql/ --output ./tests/sqlite/client.go --package sqlite --driver pq ./tests/sqlite/schema.sql
     #go run ./cmd/mangosql/ --output ./tests/postgres/enum/client.go --package enum ./tests/postgres/enum/schema.sql
     go run ./cmd/mangosql/ --output ./tests/postgres/types/client.go --package types ./tests/postgres/types/schema.sql
 
@@ -22,6 +23,7 @@ generate:
     mkdir -p ./tests/bench/pgx
     go run ./cmd/mangosql/ --output ./tests/bench/pq/client.go --package pq --driver pq ./tests/bench/schema.sql
     go run ./cmd/mangosql/ --output ./tests/bench/pgx/client.go --package pgx ./tests/bench/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/bench/sqlite/client.go --package pq --driver pq ./tests/bench/schema.sqlite.sql
 
 bench:
     CGO_ENABLED=0 go test -c -bench=. -benchtime=1s -benchmem ./tests/bench

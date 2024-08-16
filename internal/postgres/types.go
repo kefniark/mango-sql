@@ -19,7 +19,7 @@ var postgresType = map[string]string{
 	// "float2":  "float16",
 	// "float4":  "float32",
 	// "float8":  "float64",
-
+	"bytes":       "[]byte",
 	"string":      "string",
 	"text":        "string",
 	"char":        "string",
@@ -29,9 +29,7 @@ var postgresType = map[string]string{
 	"timestamp":   "time.Time",
 	"timestamptz": "time.Time",
 	"uuid":        "uuid.UUID",
-	"uuid[]":      "[]uuid.UUID",
 	"bool":        "bool",
-	"string[]":    "[]string",
 	"json":        "interface{}",
 	"jsonb":       "interface{}",
 }
@@ -39,8 +37,6 @@ var postgresType = map[string]string{
 var parseType = regexp.MustCompile(`(?P<Type>[a-zA-Z]+)(?P<Accuracy>\d*)?(?P<Array>[\[\]]*)?`)
 
 func getColumnType(column *core.SQLColumn) string {
-	src := postgresType
-
 	fieldType := column.Type
 	fieldAccuracy := ""
 	isArray := false
@@ -54,15 +50,13 @@ func getColumnType(column *core.SQLColumn) string {
 	}
 
 	newType := "string"
-	if val, ok := src[fieldType+fieldAccuracy]; ok {
+	if val, ok := postgresType[fieldType+fieldAccuracy]; ok {
 		newType = val
-	} else if val, ok := src[fieldType]; ok {
+	} else if val, ok := postgresType[fieldType]; ok {
 		newType = val
 	} else {
 		fmt.Println("Unknown type", column.Name, column.Table, column.Type)
 	}
-
-	fmt.Println("* field [", column.Name, column.Type, "] =>", newType)
 
 	if isArray && column.Nullable {
 		return fmt.Sprintf("*[]%s", newType)

@@ -222,9 +222,6 @@ func findTableDeps(schema *core.SQLSchema, table *tree.SelectClause, macro []cor
 		asClean := strings.TrimSpace(strings.Trim(st.As.String(), `"'`))
 
 		cols := resolveTableColumns(field, asClean, ctx.Tables, schema, i)
-		for _, col := range cols {
-			fmt.Println("Resolve Columns", col)
-		}
 		query.SelectFields = append(query.SelectFields, cols...)
 		names = append(names, field)
 	}

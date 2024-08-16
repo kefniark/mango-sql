@@ -10,9 +10,12 @@ func TestFindMany(t *testing.T) {
 	db, close := newTestDB(t)
 	defer close()
 
-	users, err := db.User.FindMany(func(cond SelectBuilder) SelectBuilder {
-		return cond.Where("name ILIKE $1 OR name ILIKE $2", "%user1%", "%user2%")
-	})
+	users, err := db.User.FindMany(
+		func(cond SelectBuilder) SelectBuilder {
+			return cond.Where("name ILIKE ? OR name ILIKE ?", "%user1%", "%user2%")
+		},
+		db.User.Query.Name.NotLike("%user3%"),
+	)
 	assert.NoError(t, err)
 	assert.Equal(t, 2, len(users))
 }

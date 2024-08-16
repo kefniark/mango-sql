@@ -14,10 +14,10 @@ This is inspired by [SQLC](https://github.com/sqlc-dev/sqlc) but pushes the idea
 ## Features
 
 * **Convenient**: All the structs are generated for you, No need for manual DTO/PDO
-* **Time Saver**: All the basic queries (CRUD) are generated from your schema alone
+* **Time Saver**: All the basic queries (CRUD) are generated from your schema alone, less queries to write
 * **Developer Friendly**: The code generated contains comments, examples and is designed with IDE autocompletion in mind 
 * **Flexible**: Provide a way to run dynamic queries (pagination, search, ...)
-* **Composable**: Use filters auto-generated or make your owns and reuse them across queries
+* **Composable**: Use auto-generated query filters or make your owns and reuse them across queries
 * **Safe**: All the SQL queries use prepared statement to avoid injection
 * **Consistent**: Easy to use transaction API to rollback when an error occurs
 
@@ -108,15 +108,23 @@ This repository is currently a WIP, features are still not complete and may like
 
 Also the current SQL Parser being based on CockroachDB, some postgres specific syntax may be not supported.
 
+**Known Bug**:
+* Sqlite:
+  * [ ] Generated code contains not supported keywords (like `ANY`, just need more tests)
+  * [ ] Batch insert not working, syntax not supported in sqlite
+* Postgres
+  * [x] When multiple where condition are combined, index may conflict
+  * [ ] In sqlx+pq, some advanced type serialization are not supported (like jsonb)
+
 **Roadmap**:
 * [x] Handle custom user queries
 * [ ] Handle sql enums
 * [ ] Handle sql views
 * [ ] Support more types and custom types (cf ulid, ...)
 * [ ] Support more driver and database Mysql/MariaDB/Sqlite3
-    * [x] For postgres support both `pq + sqlc` or `pgx`
-    * [ ] For Mysql/MariaDB `go-sql-driver`
-    * [ ] For Sqlite ``
+    * [x] For Postgres support both `pq + sqlc` or `pgx`
+    * [ ] For Mysql/MariaDB `go-sql-driver` (throught sqlx)
+    * [x] For Sqlite `modernc.org/sqlite` (throught sqlx)
 * [ ] Support easier logging and profiling
 * [ ] Support for Listen/Notify on pgx
 * [ ] Support DB Introspection to automatically extract schema from running database
