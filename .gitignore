@@ -14,3 +14,4 @@ bin/
 codegen/test/
 
 tests/**/client.go
+dist/

@@ -1,4 +1,4 @@
-package postgres
+package database
 
 import "github.com/kefniark/mango-sql/internal/core"
 
@@ -9,6 +9,7 @@ type PostgresCtx struct {
 type PostgresTable struct {
 	schema *core.SQLSchema
 	table  *core.SQLTable
+	driver string
 
 	Name               string
 	NameNormalized     string
@@ -64,6 +65,7 @@ type FilterMethod struct {
 type SelectFilter struct {
 	Model   string
 	Name    string
+	Pre     string
 	Comment string
 	Sql     string
 	Args    []string
@@ -85,9 +87,10 @@ type SelectQuery struct {
 }
 
 type HeaderData struct {
-	Package string
-	Url     string
-	Date    string
-	Version string
-	Deps    []string
+	Package     string
+	Url         string
+	Date        string
+	Version     string
+	Deps        []string
+	Placeholder string
 }

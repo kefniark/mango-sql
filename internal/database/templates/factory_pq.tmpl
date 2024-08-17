@@ -40,7 +40,7 @@ func newClient(ctx *DBContext) *DBClient {
 
 {{ range .Filters }}// {{ .Comment }}
 func (f {{ .Model }}[T]) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCondition {
-	return func(cond SelectBuilder) SelectBuilder {
+	{{ .Pre }}return func(cond SelectBuilder) SelectBuilder {
 		return cond{{ .Sql }}
 	}
 }

@@ -16,8 +16,10 @@ import (
 	"github.com/kefniark/mango-sql/tests/helpers"
 	"github.com/stretchr/testify/assert"
 
-	"gorm.io/driver/postgres"
+	gormPostgres "gorm.io/driver/postgres"
+	gormSqlite "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 	_ "modernc.org/sqlite"
 )
 
@@ -55,9 +57,42 @@ func newBenchmarkDBGorm(t *testing.B) (*gorm.DB, func()) {
 		panic(err)
 	}
 
-	gormDB, err := gorm.Open(postgres.New(postgres.Config{
+	gormDB, err := gorm.Open(gormPostgres.New(gormPostgres.Config{
 		Conn: db,
-	}), &gorm.Config{})
+	}), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
+	if err != nil {
+		panic(err)
+	}
+	return gormDB, func() {
+		db.Close()
+	}
+}
+
+func newBenchmarkDBGormSqlite(t *testing.B) (*gorm.DB, func()) {
+	t.Helper()
+
+	db, err := sqlx.Open("sqlite", ":memory:")
+	if err != nil {
+		panic(err)
+	}
+
+	data, err := os.ReadFile("./schema.sqlite.sql")
+	if err != nil {
+		panic(err)
+	}
+
+	_, err = db.Exec(string(data))
+	if err != nil {
+		panic(err)
+	}
+
+	gormDB, err := gorm.Open(gormSqlite.New(gormSqlite.Config{
+		Conn: db,
+	}), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Silent),
+	})
 	if err != nil {
 		panic(err)
 	}
@@ -68,7 +103,7 @@ func newBenchmarkDBGorm(t *testing.B) (*gorm.DB, func()) {
 
 func newBenchmarkDBSQLite(t *testing.B) (*driver_sqlite.DBClient, func()) {
 	t.Helper()
-	db, err := sqlx.Connect("sqlite", ":memory:")
+	db, err := sqlx.Open("sqlite", ":memory:")
 	if err != nil {
 		panic(err)
 	}
@@ -98,46 +133,55 @@ type User struct {
 	DeletedAt *time.Time `json:"deleted_at" db:"deleted_at"`
 }
 
-func benchmarkInsertOne(t *testing.B) {
-	dbPq, close := newBenchmarkDBPQ(t)
+func BenchmarkInsertOne(t *testing.B) {
+	dbMangoPq, close := newBenchmarkDBPQ(t)
 	defer close()
-	dbPgx, closePgx := newBenchmarkDBPGX(t)
+	dbMangoPgx, closePgx := newBenchmarkDBPGX(t)
 	defer closePgx()
-	dbGorm, closeGorm := newBenchmarkDBGorm(t)
+	dbGormPgx, closeGorm := newBenchmarkDBGorm(t)
 	defer closeGorm()
-	dbSqlite, closeSqlite := newBenchmarkDBSQLite(t)
+	dbMangoSqlite, closeSqlite := newBenchmarkDBSQLite(t)
 	defer closeSqlite()
+	dbGormSqlite, closeGormSqlite := newBenchmarkDBGormSqlite(t)
+	defer closeGormSqlite()
 
 	t.Run("Insert One - Mango PQ", func(t *testing.B) {
 		for i := 0; i < t.N; i++ {
-			_, err := dbPq.User.Insert(driver_pq.UserCreate{Name: "John Doe", Email: "john@email.com"})
+			_, err := dbMangoPq.User.Insert(driver_pq.UserCreate{Name: "John Doe", Email: "john@email.com"})
 			assert.NoError(t, err)
 		}
 	})
 
 	t.Run("Insert One - Mango PGX", func(t *testing.B) {
 		for i := 0; i < t.N; i++ {
-			_, err := dbPgx.User.Insert(driver_pgx.UserCreate{Name: "John Doe", Email: "john@email.com"})
+			_, err := dbMangoPgx.User.Insert(driver_pgx.UserCreate{Name: "John Doe", Email: "john@email.com"})
 			assert.NoError(t, err)
 		}
 	})
 
-	t.Run("Insert One - Gorm", func(t *testing.B) {
+	t.Run("Insert One - Gorm PGX", func(t *testing.B) {
 		for i := 0; i < t.N; i++ {
-			tx := dbGorm.Create(&User{Id: uuid.New(), Name: "John Doe", Email: "john@email.com"})
+			tx := dbGormPgx.Create(&User{Id: uuid.New(), Name: "John Doe", Email: "john@email.com"})
 			assert.NoError(t, tx.Error)
 		}
 	})
 
-	t.Run("Insert One - Sqlite", func(t *testing.B) {
+	t.Run("Insert One - Mango Sqlite", func(t *testing.B) {
 		for i := 0; i < t.N; i++ {
-			_, err := dbSqlite.User.Insert(driver_sqlite.UserCreate{Id: uuid.NewString(), Name: "John Doe", Email: "john@email.com"})
+			_, err := dbMangoSqlite.User.Insert(driver_sqlite.UserCreate{Id: uuid.NewString(), Name: "John Doe", Email: "john@email.com"})
 			assert.NoError(t, err)
+		}
+	})
+
+	t.Run("Insert One - Gorm Sqlite", func(t *testing.B) {
+		for i := 0; i < t.N; i++ {
+			tx := dbGormSqlite.Create(&User{Id: uuid.New(), Name: "John Doe", Email: "john@email.com"})
+			assert.NoError(t, tx.Error)
 		}
 	})
 }
 
-func benchmarkInsertBulk(t *testing.B) {
+func BenchmarkInsertBulk(t *testing.B) {
 	db, close := newBenchmarkDBPQ(t)
 	defer close()
 	dbPgx, closePgx := newBenchmarkDBPGX(t)
@@ -197,7 +241,7 @@ func benchmarkInsertBulk(t *testing.B) {
 	// })
 }
 
-func benchmarkSelect(t *testing.B) {
+func BenchmarkSelect(t *testing.B) {
 	db, close := newBenchmarkDBPQ(t)
 	defer close()
 	dbPgx, closePgx := newBenchmarkDBPGX(t)
@@ -226,7 +270,7 @@ func benchmarkSelect(t *testing.B) {
 		}
 	})
 
-	t.Run("Select - Mango Pgx", func(t *testing.B) {
+	t.Run("Select - Mango PGX", func(t *testing.B) {
 		create := make([]driver_pgx.UserCreate, 10)
 		for i := 0; i < len(create); i++ {
 			create[i] = driver_pgx.UserCreate{Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
@@ -245,7 +289,7 @@ func benchmarkSelect(t *testing.B) {
 		}
 	})
 
-	t.Run("Select - Gorm", func(t *testing.B) {
+	t.Run("Select - Gorm PGX", func(t *testing.B) {
 		create := make([]User, 10)
 		for i := 0; i < len(create); i++ {
 			create[i] = User{Id: uuid.New(), Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
@@ -285,10 +329,4 @@ func benchmarkSelect(t *testing.B) {
 	// 		}
 	// 	}
 	// })
-}
-
-func Benchmark(t *testing.B) {
-	benchmarkInsertOne(t)
-	benchmarkInsertBulk(t)
-	benchmarkSelect(t)
 }

@@ -30,7 +30,7 @@ func NewDBConfigWith(t *testing.T, data []byte, name string) *pgtestdb.Config {
 	return pgtestdb.Custom(t, conf, migrator)
 }
 
-func NewDBConfig(t *testing.T) *pgtestdb.Config {
+func NewDBConfig(t *testing.T, fs embed.FS) *pgtestdb.Config {
 	t.Helper()
 
 	gm := goosemigrator.New(

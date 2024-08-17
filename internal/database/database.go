@@ -1,4 +1,4 @@
-package postgres
+package database
 
 import (
 	"bufio"
@@ -32,17 +32,25 @@ var customTypes = []FieldInitializer{
 }
 
 func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver string) error {
-	headerTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/header_%s.tmpl", driver))
+	templateType := ""
+	switch driver {
+	case "pgx":
+		templateType = "pgx"
+	default:
+		templateType = "pq"
+	}
+
+	headerTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/header_%s.tmpl", templateType))
 	if err != nil {
 		return err
 	}
 
-	factoryTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/factory_%s.tmpl", driver))
+	factoryTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/factory_%s.tmpl", templateType))
 	if err != nil {
 		return err
 	}
 
-	ctxTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/ctx_%s.tmpl", driver))
+	ctxTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/ctx_%s.tmpl", templateType))
 	if err != nil {
 		return err
 	}
@@ -69,7 +77,7 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 
 	postgresTables := []*PostgresTable{}
 	for _, table := range tables {
-		entry := toPostgresTable(table)
+		entry := toPostgresTable(table, driver)
 		entry.schema = schema
 		entry.table = table
 		postgresTables = append(postgresTables, entry)
@@ -102,12 +110,18 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 	ctxConst := bufio.NewWriter(&ctxConstBuf)
 	ctxConst.Flush()
 
+	placeholder := "squirrel.Dollar"
+	if driver == "sqlite" {
+		placeholder = "squirrel.Question"
+	}
+
 	if err = headerTmpl.Execute(contents, HeaderData{
 		Package: pkg,
 		Url:     "https://github.com/kefniark/mangosql",
 		Date:    time.Now().String(),
 		Version: "0.0.1",
 		Deps:    maps.Values(deps),
+		Placeholder: placeholder,
 	}); err != nil {
 		return err
 	}
@@ -119,7 +133,7 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 	}{
 		Tables:  postgresTables,
 		Queries: postgresQueries,
-		Filters: GetFilterMethods(postgresTables),
+		Filters: GetFilterMethods(postgresTables, driver),
 	}); err != nil {
 		return err
 	}
@@ -172,7 +186,7 @@ func toPostgresQuery(query *core.SQLQuery) *PostgresQuery {
 	}
 }
 
-func toPostgresTable(table *core.SQLTable) *PostgresTable {
+func toPostgresTable(table *core.SQLTable, driver string) *PostgresTable {
 	columns := []*PostgresColumn{}
 
 	cols := maps.Values(table.Columns)
@@ -190,6 +204,8 @@ func toPostgresTable(table *core.SQLTable) *PostgresTable {
 	update := getUpdateFields(table)
 
 	return &PostgresTable{
+		driver: driver,
+
 		Name:               table.Name,
 		NameNormalized:     strcase.ToCamel(plural.Singular(table.Name)),
 		Columns:            columns,
@@ -421,12 +437,12 @@ func (table *PostgresTable) GetCreateSqlContent() string {
 
 	if table.HasInsertExtraCreated() {
 		keys = append(keys, "created_at")
-		values = append(values, "NOW()")
+		values = append(values, table.GetNow())
 	}
 
 	if table.HasInsertExtraUpdated() {
 		keys = append(keys, "updated_at")
-		values = append(values, "NOW()")
+		values = append(values, table.GetNow())
 	}
 
 	return fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s) RETURNING %s`, table.Name, strings.Join(keys, ", "), strings.Join(values, ", "), strings.Join(fields, ", "))
@@ -450,14 +466,38 @@ func (table *PostgresTable) GetCreateManySqlContent() string {
 		}
 	}
 
+	if table.driver == "sqlite" {
+		values = nil
+		for _, val := range table.ColumnsUpdate {
+			values = append(values, fmt.Sprintf("json_extract(t.value, '$.%s') %s", val.NameJson, val.Name))
+		}
+
+		if table.HasInsertExtraCreated() {
+			keys = append(keys, "created_at")
+			values = append(values, table.GetNow())
+		}
+
+		if table.HasInsertExtraUpdated() {
+			keys = append(keys, "updated_at")
+			values = append(values, table.GetNow())
+		}
+
+		return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM json_each(?) as t RETURNING %s`,
+			table.Name,
+			strings.Join(keys, ", "),
+			strings.Join(values, ", "),
+			strings.Join(ids, ", "),
+		)
+	}
+
 	if table.HasInsertExtraCreated() {
 		keys = append(keys, "created_at")
-		values = append(values, "NOW()")
+		values = append(values, table.GetNow())
 	}
 
 	if table.HasInsertExtraUpdated() {
 		keys = append(keys, "updated_at")
-		values = append(values, "NOW()")
+		values = append(values, table.GetNow())
 	}
 
 	return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM jsonb_to_recordset($1) as t(%s) RETURNING %s`,
@@ -497,16 +537,16 @@ func (table *PostgresTable) GetUpsertSqlContent() string {
 
 	if table.HasInsertExtraCreated() {
 		keys = append(keys, "created_at")
-		values = append(values, "NOW()")
+		values = append(values, table.GetNow())
 	}
 
 	if table.HasInsertExtraUpdated() {
 		keys = append(keys, "updated_at")
-		values = append(values, "NOW()")
+		values = append(values, table.GetNow())
 	}
 
 	if table.HasUpdateExtraUpdated() {
-		set = append(set, "updated_at=NOW()")
+		set = append(set, "updated_at="+table.GetNow())
 	}
 
 	return fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s) ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s`,
@@ -521,6 +561,14 @@ func (table *PostgresTable) GetUpsertSqlContent() string {
 
 func (table *PostgresTable) GetUpsertManySqlName() string {
 	return strcase.ToLowerCamel(plural.Singular(table.Name)) + "UpsertManySql"
+}
+
+func (table *PostgresTable) GetNow() string {
+	if table.driver == "sqlite" {
+		return "CURRENT_TIMESTAMP"
+	}
+
+	return "NOW()"
 }
 
 func (table *PostgresTable) GetUpsertManySqlContent() string {
@@ -542,14 +590,40 @@ func (table *PostgresTable) GetUpsertManySqlContent() string {
 		types = append(types, fmt.Sprintf("%s %s", val.Name, val.TypeSql))
 	}
 
+	if table.driver == "sqlite" {
+		values = nil
+		for _, val := range table.ColumnsUpdate {
+			values = append(values, fmt.Sprintf("json_extract(s.value, '$.%s') AS %s", val.NameJson, val.Name))
+		}
+
+		if table.HasInsertExtraCreated() {
+			keys = append(keys, "created_at")
+			values = append(values, table.GetNow())
+		}
+
+		if table.HasInsertExtraUpdated() {
+			keys = append(keys, "updated_at")
+			values = append(values, table.GetNow())
+		}
+
+		return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM json_each(?) as s WHERE true ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s`,
+			table.Name,
+			strings.Join(keys, ", "),
+			strings.Join(values, ", "),
+			strings.Join(ids, ", "),
+			strings.Join(set, ", "),
+			strings.Join(returning, ", "),
+		)
+	}
+
 	if table.HasInsertExtraCreated() {
 		keys = append(keys, "created_at")
-		values = append(values, "NOW()")
+		values = append(values, table.GetNow())
 	}
 
 	if table.HasInsertExtraUpdated() {
 		keys = append(keys, "updated_at")
-		values = append(values, "NOW()")
+		values = append(values, table.GetNow())
 	}
 
 	return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM jsonb_to_recordset($1) as t(%s) ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s`,
@@ -585,7 +659,7 @@ func (table *PostgresTable) GetUpdateSqlContent() string {
 	}
 
 	if table.HasUpdateExtraUpdated() {
-		values = append(values, "updated_at=NOW()")
+		values = append(values, "updated_at="+table.GetNow())
 	}
 
 	return fmt.Sprintf(`UPDATE %s SET %s WHERE %s RETURNING %s`, table.Name, strings.Join(values, ", "), strings.Join(keys, " AND "), strings.Join(fields, ", "))
@@ -610,6 +684,21 @@ func (table *PostgresTable) GetUpdateManySqlContent() string {
 		} else {
 			set = append(set, fmt.Sprintf("%s=t.%s", val.Name, val.Name))
 		}
+	}
+
+	if table.driver == "sqlite" {
+		values := []string{}
+		for _, val := range table.ColumnsUpdate {
+			values = append(values, fmt.Sprintf("json_extract(s.value, '$.%s') AS %s", val.NameJson, val.Name))
+		}
+
+		return fmt.Sprintf(`UPDATE %s SET %s FROM (SELECT %s FROM json_each(?) as s) as t WHERE %s RETURNING %s`,
+			table.Name,
+			strings.Join(set, ", "),
+			strings.Join(values, ", "),
+			strings.Join(where, " AND "),
+			strings.Join(ids, ", "),
+		)
 	}
 
 	return fmt.Sprintf(`UPDATE %s SET %s FROM jsonb_to_recordset($1) as t(%s) WHERE %s RETURNING %s`,
@@ -643,7 +732,7 @@ func (table *PostgresTable) GetDeleteSoftSqlContent() string {
 		}
 	}
 
-	return fmt.Sprintf(`UPDATE %s SET deleted_at=NOW() WHERE %s`, table.Name, strings.Join(keys, " AND "))
+	return fmt.Sprintf(`UPDATE %s SET deleted_at=%s WHERE %s`, table.Name, table.GetNow(), strings.Join(keys, " AND "))
 }
 
 func (table *PostgresTable) GetDeleteHardSqlName() string {

@@ -1,4 +1,4 @@
-package postgres
+package database
 
 import (
 	"slices"
@@ -42,7 +42,7 @@ func (table *PostgresTable) GetFieldFilters() []SelectFieldFilter {
 	return filters
 }
 
-func GetFilterMethods(tables []*PostgresTable) []FilterMethod {
+func GetFilterMethods(tables []*PostgresTable, driver string) []FilterMethod {
 	supportedFilters := []string{"FilterGenericField"}
 	for _, table := range tables {
 		for _, col := range table.Columns {
@@ -59,6 +59,52 @@ func GetFilterMethods(tables []*PostgresTable) []FilterMethod {
 		method := FilterMethod{Name: t}
 
 		if t == "FilterGenericField" {
+			if driver == "sqlite" {
+				method.Filters = append(method.Filters,
+					SelectFilter{
+						Model: t,
+						Name:  "In",
+						Pre: `jsonArgs, err := json.Marshal(args)
+							if err != nil {
+								return f.IsNull()
+							}
+							`,
+						Comment: `Only include Records with a field contains in a set of values`,
+						Sql:     `.Where(fmt.Sprintf("%s.%s IN (SELECT value FROM json_each(?))", f.table, f.field), jsonArgs)`,
+						Args:    []string{"args ...T"},
+					},
+					SelectFilter{
+						Model: t,
+						Name:  "NotIn",
+						Pre: `jsonArgs, err := json.Marshal(args)
+							if err != nil {
+								return f.IsNull()
+							}
+							`,
+						Comment: `Exclude Records with a field not contains in a set of values`,
+						Sql:     `.Where(fmt.Sprintf("%s.%s NOT INT (SELECT value FROM json_each(?))", f.table, f.field), jsonArgs)`,
+						Args:    []string{"args ...T"},
+					},
+				)
+			} else {
+				method.Filters = append(method.Filters,
+					SelectFilter{
+						Model:   t,
+						Name:    "In",
+						Comment: `Only include Records with a field contains in a set of values`,
+						Sql:     `.Where(fmt.Sprintf("%s.%s = ANY(?)", f.table, f.field), pq.Array(args))`,
+						Args:    []string{"args ...T"},
+					},
+					SelectFilter{
+						Model:   t,
+						Name:    "NotIn",
+						Comment: `Exclude Records with a field not contains in a set of values`,
+						Sql:     `.Where(fmt.Sprintf("%s.%s != ANY(?)", f.table, f.field), pq.Array(args))`,
+						Args:    []string{"args ...T"},
+					},
+				)
+			}
+
 			method.Filters = append(method.Filters,
 				SelectFilter{
 					Model:   t,
@@ -74,20 +120,7 @@ func GetFilterMethods(tables []*PostgresTable) []FilterMethod {
 					Sql:     `.Where(fmt.Sprintf("%s.%s != ?", f.table, f.field), arg)`,
 					Args:    []string{"arg T"},
 				},
-				SelectFilter{
-					Model:   t,
-					Name:    "In",
-					Comment: `Only include Records with a field contains in a set of values`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s = ANY(?)", f.table, f.field), pq.Array(args))`,
-					Args:    []string{"args ...T"},
-				},
-				SelectFilter{
-					Model:   t,
-					Name:    "NotIn",
-					Comment: `Exclude Records with a field not contains in a set of values`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s != ANY(?)", f.table, f.field), pq.Array(args))`,
-					Args:    []string{"args ...T"},
-				},
+
 				SelectFilter{
 					Model:   t,
 					Name:    "IsNull",

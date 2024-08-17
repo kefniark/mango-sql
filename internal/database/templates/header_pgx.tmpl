@@ -6,17 +6,20 @@ package {{ .Package }}
  */
 
 import (
+    "context"
 	"encoding/json"
     "fmt"
 	"errors"
 
-    "github.com/lib/pq"
     squirrel "github.com/Masterminds/squirrel"
-    "github.com/jmoiron/sqlx"
+    "github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
+    "github.com/lib/pq"
 {{ range .Deps }}   "{{ . }}"
 {{ end }}
 )
 
 type SelectBuilder = squirrel.SelectBuilder
 type WhereCondition = func(query SelectBuilder) SelectBuilder
+var placeholder = {{ .Placeholder }}
 

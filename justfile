@@ -9,14 +9,14 @@ lint:
 
 generate:
     # tests
-    go run ./cmd/mangosql/ --output ./tests/postgres/pgx_driver/client.go --package main ./tests/postgres/pgx_driver/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/postgres/overview/client.go --package overview ./tests/postgres/overview/schema.sql
     go run ./cmd/mangosql/ --output ./tests/postgres/auto-increment/client.go --package autoincrement ./tests/postgres/auto-increment/schema.sql
     go run ./cmd/mangosql/ --output ./tests/postgres/composite/client.go --package composite ./tests/postgres/composite/schema.sql
-
-    go run ./cmd/mangosql/ --output ./tests/sqlite/client.go --package sqlite --driver pq ./tests/sqlite/schema.sql
-    #go run ./cmd/mangosql/ --output ./tests/postgres/enum/client.go --package enum ./tests/postgres/enum/schema.sql
     go run ./cmd/mangosql/ --output ./tests/postgres/types/client.go --package types ./tests/postgres/types/schema.sql
+
+    # queries
+    go run ./cmd/mangosql/ --output ./tests/queries/pq/client.go --package pq --driver pq ./tests/queries/sqlited/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/queries/pgx/client.go --package pgx ./tests/queries/sqlited/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/queries/sqlited/client.go --package sqlited --driver sqlite ./tests/queries/sqlited/schema.sql
 
     # bench
     mkdir -p ./tests/bench/pq
@@ -24,10 +24,10 @@ generate:
     mkdir -p ./tests/bench/sqlite
     go run ./cmd/mangosql/ --output ./tests/bench/pq/client.go --package pq --driver pq ./tests/bench/schema.sql
     go run ./cmd/mangosql/ --output ./tests/bench/pgx/client.go --package pgx ./tests/bench/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/bench/sqlite/client.go --package pq --driver pq ./tests/bench/schema.sqlite.sql
+    go run ./cmd/mangosql/ --output ./tests/bench/sqlite/client.go --package pq --driver sqlite ./tests/bench/schema.sqlite.sql
 
 bench:
-    CGO_ENABLED=0 go test -c -bench=. -benchtime=1s -benchmem ./tests/bench
+    CGO_ENABLED=0 go test -bench=. -benchmem ./tests/bench | tee bench.log
 
 test: generate
     go test -race --cover --coverprofile=coverage.txt ./...

@@ -154,7 +154,7 @@ func (q *{{ .NameNormalized }}Model) DeleteHard(db *DBClient) error {
 //     // ... can use filters here (cf db.{{ .NameNormalized }}.Query.*)
 //   )
 func (q *{{ .NameNormalized }}Queries) Count(filters ...WhereCondition) (int, error) {
-	query := squirrel.Select("count(*)").From("{{ .Name }}").PlaceholderFormat(squirrel.Dollar)
+	query := squirrel.Select("count(*)").From("{{ .Name }}").PlaceholderFormat(placeholder)
 	for _, filter := range filters {
 		query = filter(query)
 	}
@@ -176,7 +176,7 @@ func (q *{{ .NameNormalized }}Queries) Count(filters ...WhereCondition) (int, er
 //     // ... can use filters here (cf db.{{ .NameNormalized }}.Query.*)
 //   )
 func (q *{{ .NameNormalized }}Queries) FindMany(filters ...WhereCondition) ([]{{ .NameNormalized }}Model, error) {
-	query := squirrel.Select({{ .NameNormalized }}Fields...).From("{{ .Name }}").PlaceholderFormat(squirrel.Dollar)
+	query := squirrel.Select({{ .NameNormalized }}Fields...).From("{{ .Name }}").PlaceholderFormat(placeholder)
 	for _, filter := range filters {
 		query = filter(query)
 	}

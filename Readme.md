@@ -110,27 +110,33 @@ Also the current SQL Parser being based on CockroachDB, some postgres specific s
 
 **Known Bug**:
 * Sqlite:
-  * [ ] Generated code contains not supported keywords (like `ANY`, just need more tests)
-  * [ ] Batch insert not working, syntax not supported in sqlite
+  * [x] ~Generated code contains not supported keywords (like `ANY`, just need more tests)~
+  * [x] ~Batch insert not working, syntax not supported in sqlite~
 * Postgres
-  * [x] When multiple where condition are combined, index may conflict
+  * [x] ~When multiple where condition are combined, index may conflict~
   * [ ] In sqlx+pq, some advanced type serialization are not supported (like jsonb)
 
 **Roadmap**:
-* [x] Handle custom user queries
+* [x] ~Handle custom user queries~
 * [ ] Handle sql enums
 * [ ] Handle sql views
 * [ ] Support more types and custom types (cf ulid, ...)
 * [ ] Support more driver and database Mysql/MariaDB/Sqlite3
-    * [x] For Postgres support both `pq + sqlc` or `pgx`
+    * [x] ~For Postgres support both `pq + sqlc` or `pgx`~
     * [ ] For Mysql/MariaDB `go-sql-driver` (throught sqlx)
-    * [x] For Sqlite `modernc.org/sqlite` (throught sqlx)
+    * [x] ~For Sqlite `modernc.org/sqlite` (throught sqlx)~
 * [ ] Support easier logging and profiling
 * [ ] Support for Listen/Notify on pgx
 * [ ] Support DB Introspection to automatically extract schema from running database
 * [ ] Write Documentation
     * [ ] Pick a static doc generator website
     * [ ] Setup
+    * Tutorial Postgres
+        * Local DB
+        * Supabase
+    * Tutorial SQLite
+        * Memory
+        * Torso
 * [ ] Write benchmark to compare performance with existing Golang ORM
     * [x] Wrote basic comparison (insert, bulk insert, select)
     * [ ] Add more use cases (select with lot of data, upsert, complex query with joins)

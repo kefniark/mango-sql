@@ -12,7 +12,7 @@ type CustomQueries struct {
     //   )
     func (q *CustomQueries) {{ .NameNormalized }}(filters ...WhereCondition) ([]{{ .NameNormalized }}Model, error ) {
         query := squirrel.Select("{{ .Select }}")
-        query = query.From("{{ .From }}").PlaceholderFormat(squirrel.Dollar)
+        query = query.From("{{ .From }}").PlaceholderFormat(placeholder)
 {{ if .Where }}        query = query.Where("{{ .Where }}")
 {{ end }}{{ if .GroupBy }}        query = query.GroupBy({{ range .GroupBy }}"{{ . }}"{{ end }})
 {{ end }}{{ if .Having }}        query = query.GroupBy("{{ .Having }}")
