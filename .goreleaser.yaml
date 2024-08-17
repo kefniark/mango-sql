@@ -14,13 +14,16 @@ before:
     - go mod tidy
 
 builds:
-  - main: cmd/mangosql
+  - main: cmd/mangosql/mangosql.go
     env:
       - CGO_ENABLED=0
     goos:
       - linux
       - windows
       - darwin
+    goarch:
+      - amd64
+      - arm64
 
 archives:
   - format: tar.gz
