@@ -4,6 +4,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: "Mango SQL",
   description: "Documentation Website for mango sql (getting started, samples, playground, references, ...)",
+  base: '/mango-sql/',
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
