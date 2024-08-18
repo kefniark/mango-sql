@@ -307,27 +307,18 @@ func testHardDelete(t *testing.T, db *DBClient) {
 	_, err := db.User.Insert(UserCreate{Id: 2, Name: "user2"})
 	assert.NoError(t, err)
 
-	_, err = db.User.FindMany(
-		db.User.Query.Name.In("user1", "user2"),
-		db.User.Query.Id.LesserThan(10),
-		db.User.Query.Id.OrderAsc(),
-		db.User.Query.Offset(25),
-		db.User.Query.Limit(10),
-	)
+	err = db.User.DeleteHard(3)
+	assert.NoError(t, err)
+	count1, err := db.User.Count()
 	assert.NoError(t, err)
 
-	// err = db.User.DeleteHard(3)
-	// assert.NoError(t, err)
-	// count1, err := db.User.Count()
-	// assert.NoError(t, err)
+	err = db.User.DeleteHard(2)
+	assert.NoError(t, err)
+	count2, err := db.User.Count()
+	assert.NoError(t, err)
 
-	// err = db.User.DeleteHard(2)
-	// assert.NoError(t, err)
-	// count2, err := db.User.Count()
-	// assert.NoError(t, err)
-
-	// assert.Equal(t, 1, count1)
-	// assert.Equal(t, 0, count2)
+	assert.Equal(t, 1, count1)
+	assert.Equal(t, 0, count2)
 }
 
 func TestTransaction(t *testing.T) {
