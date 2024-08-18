@@ -47,7 +47,7 @@ func (f {{ .Model }}[T]) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCon
 
 {{ end }}{{ end }}
 
-type DB_PGX interface {
+type DbPgx interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
@@ -55,7 +55,7 @@ type DB_PGX interface {
 }
 
 // Create a new instance of MangoSql
-func New(db DB_PGX) *DBClient {
+func New(db DbPgx) *DBClient {
     return newClient(&DBContext{
 		db:       db,
 		tx:       nil,
