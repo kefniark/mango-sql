@@ -32,9 +32,10 @@ export default defineConfig({
       {
         text: 'Advanced Features',
         items: [
-          // { text: 'ID Generation', link: '/api/mutations' },
+          // { text: 'UUID Generation', link: '/api/mutations' },
           { text: 'Soft Delete', link: '/features/soft-delete' },
           // { text: 'Logging', link: '/api/mutations' },
+          // { text: 'Migrations', link: '/api/mutations' },
         ]
       },
       // {

@@ -50,11 +50,6 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		return err
 	}
 
-	ctxTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/ctx_%s.tmpl", templateType))
-	if err != nil {
-		return err
-	}
-
 	modelTmpl, err := template.ParseFS(templates, "templates/model.tmpl")
 	if err != nil {
 		return err
@@ -116,11 +111,11 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 	}
 
 	if err = headerTmpl.Execute(contents, HeaderData{
-		Package: pkg,
-		Url:     "https://github.com/kefniark/mangosql",
-		Date:    time.Now().String(),
-		Version: "0.0.1",
-		Deps:    maps.Values(deps),
+		Package:     pkg,
+		Url:         "https://github.com/kefniark/mangosql",
+		Date:        time.Now().String(),
+		Version:     "0.0.1",
+		Deps:        maps.Values(deps),
 		Placeholder: placeholder,
 	}); err != nil {
 		return err
@@ -134,12 +129,6 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		Tables:  postgresTables,
 		Queries: postgresQueries,
 		Filters: GetFilterMethods(postgresTables, driver),
-	}); err != nil {
-		return err
-	}
-
-	if err = ctxTmpl.Execute(contents, PostgresCtx{
-		Const: ctxConstBuf.String(),
 	}); err != nil {
 		return err
 	}

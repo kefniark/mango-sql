@@ -187,3 +187,9 @@ func limitFirst(cond SelectBuilder) SelectBuilder {
 	return cond.Offset(0).Limit(1)
 }
 
+type DBContext struct {
+    db *sqlx.DB
+    tx *sqlx.Tx
+    prepared map[string]*sqlx.Stmt
+}
+

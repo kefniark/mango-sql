@@ -68,9 +68,10 @@ func GetFilterMethods(tables []*PostgresTable, driver string) []FilterMethod {
 							if err != nil {
 								return f.IsNull()
 							}
+							sql := fmt.Sprintf("%s.%s IN (SELECT value FROM json_each(?))", f.table, f.field)
 							`,
 						Comment: `Only include Records with a field contains in a set of values`,
-						Sql:     `.Where(fmt.Sprintf("%s.%s IN (SELECT value FROM json_each(?))", f.table, f.field), jsonArgs)`,
+						Sql:     `.Where(sql, jsonArgs)`,
 						Args:    []string{"args ...T"},
 					},
 					SelectFilter{
@@ -80,26 +81,31 @@ func GetFilterMethods(tables []*PostgresTable, driver string) []FilterMethod {
 							if err != nil {
 								return f.IsNull()
 							}
+							sql := fmt.Sprintf("%s.%s NOT INT (SELECT value FROM json_each(?))", f.table, f.field)
 							`,
 						Comment: `Exclude Records with a field not contains in a set of values`,
-						Sql:     `.Where(fmt.Sprintf("%s.%s NOT INT (SELECT value FROM json_each(?))", f.table, f.field), jsonArgs)`,
+						Sql:     `.Where(sql, jsonArgs)`,
 						Args:    []string{"args ...T"},
 					},
 				)
 			} else {
 				method.Filters = append(method.Filters,
 					SelectFilter{
-						Model:   t,
-						Name:    "In",
+						Model: t,
+						Name:  "In",
+						Pre: `sql := fmt.Sprintf("%s.%s = ANY(?)", f.table, f.field)
+						`,
 						Comment: `Only include Records with a field contains in a set of values`,
-						Sql:     `.Where(fmt.Sprintf("%s.%s = ANY(?)", f.table, f.field), pq.Array(args))`,
+						Sql:     `.Where(sql, pq.Array(args))`,
 						Args:    []string{"args ...T"},
 					},
 					SelectFilter{
-						Model:   t,
-						Name:    "NotIn",
+						Model: t,
+						Name:  "NotIn",
+						Pre: `sql := fmt.Sprintf("%s.%s != ANY(?)", f.table, f.field)
+						`,
 						Comment: `Exclude Records with a field not contains in a set of values`,
-						Sql:     `.Where(fmt.Sprintf("%s.%s != ANY(?)", f.table, f.field), pq.Array(args))`,
+						Sql:     `.Where(sql, pq.Array(args))`,
 						Args:    []string{"args ...T"},
 					},
 				)
@@ -107,46 +113,58 @@ func GetFilterMethods(tables []*PostgresTable, driver string) []FilterMethod {
 
 			method.Filters = append(method.Filters,
 				SelectFilter{
-					Model:   t,
-					Name:    "Equal",
+					Model: t,
+					Name:  "Equal",
+					Pre: `sql := fmt.Sprintf("%s.%s = ?", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field specific value`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s = ?", f.table, f.field), arg)`,
+					Sql:     `.Where(sql, arg)`,
 					Args:    []string{"arg T"},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "NotEqual",
+					Model: t,
+					Name:  "NotEqual",
+					Pre: `sql := fmt.Sprintf("%s.%s != ?", f.table, f.field)
+					`,
 					Comment: `Exclude Records with a field specific value`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s != ?", f.table, f.field), arg)`,
+					Sql:     `.Where(sql, arg)`,
 					Args:    []string{"arg T"},
 				},
 
 				SelectFilter{
-					Model:   t,
-					Name:    "IsNull",
+					Model: t,
+					Name:  "IsNull",
+					Pre: `sql := fmt.Sprintf("%s.%s IS NULL", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field has undefined value`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s IS NULL", f.table, f.field))`,
+					Sql:     `.Where(sql)`,
 					Args:    []string{},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "IsNotNull",
+					Model: t,
+					Name:  "IsNotNull",
+					Pre: `sql := fmt.Sprintf("%s.%s IS NOT NULL", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field has defined values`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s IS NOT NULL", f.table, f.field))`,
+					Sql:     `.Where(sql)`,
 					Args:    []string{},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "OrderAsc",
+					Model: t,
+					Name:  "OrderAsc",
+					Pre: `sql := fmt.Sprintf("%s.%s ASC", f.table, f.field)
+					`,
 					Comment: `Sort Records in ASC order`,
-					Sql:     `.OrderBy(fmt.Sprintf("%s.%s ASC", f.table, f.field))`,
+					Sql:     `.OrderBy(sql)`,
 					Args:    []string{},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "OrderDesc",
+					Model: t,
+					Name:  "OrderDesc",
+					Pre: `sql := fmt.Sprintf("%s.%s DESC", f.table, f.field)
+					`,
 					Comment: `Sort Records in DESC order`,
-					Sql:     `.OrderBy(fmt.Sprintf("%s.%s DESC", f.table, f.field))`,
+					Sql:     `.OrderBy(sql)`,
 					Args:    []string{},
 				},
 			)
@@ -155,17 +173,21 @@ func GetFilterMethods(tables []*PostgresTable, driver string) []FilterMethod {
 		if t == "FilterStringField" {
 			method.Filters = append(method.Filters,
 				SelectFilter{
-					Model:   t,
-					Name:    "Like",
+					Model: t,
+					Name:  "Like",
+					Pre: `sql := fmt.Sprintf("%s.%s LIKE ?", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field contains a specific value (use % as wildcard)`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s LIKE ?", f.table, f.field), arg)`,
+					Sql:     `.Where(sql, arg)`,
 					Args:    []string{"arg T"},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "NotLike",
+					Model: t,
+					Name:  "NotLike",
+					Pre: `sql := fmt.Sprintf("%s.%s NOT LIKE ?", f.table, f.field)
+					`,
 					Comment: `Exclude Records with a field contains a specific value  (use % as wildcard)`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s NOT LIKE ?", f.table, f.field), arg)`,
+					Sql:     `.Where(sql, arg)`,
 					Args:    []string{"arg T"},
 				},
 			)
@@ -174,38 +196,48 @@ func GetFilterMethods(tables []*PostgresTable, driver string) []FilterMethod {
 		if t == "FilterNumericField" {
 			method.Filters = append(method.Filters,
 				SelectFilter{
-					Model:   t,
-					Name:    "GreaterThan",
+					Model: t,
+					Name:  "GreaterThan",
+					Pre: `sql := fmt.Sprintf("%s.%s > ?", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field greater than a specific value`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s > ?", f.table, f.field), arg)`,
+					Sql:     `.Where(sql, arg)`,
 					Args:    []string{"arg T"},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "GreaterThanOrEqual",
+					Model: t,
+					Name:  "GreaterThanOrEqual",
+					Pre: `sql := fmt.Sprintf("%s.%s >= ?", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field greater or equal than a specific value`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s >= ?", f.table, f.field), arg)`,
+					Sql:     `.Where(sql, arg)`,
 					Args:    []string{"arg T"},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "LesserThan",
+					Model: t,
+					Name:  "LesserThan",
+					Pre: `sql := fmt.Sprintf("%s.%s < ?", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field lesser than a specific value`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s < ?", f.table, f.field), arg)`,
+					Sql:     `.Where(sql, arg)`,
 					Args:    []string{"arg T"},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "LesserThanOrEqual",
+					Model: t,
+					Name:  "LesserThanOrEqual",
+					Pre: `sql := fmt.Sprintf("%s.%s <= ?", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field lesser or equal than a specific value`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s <= ?", f.table, f.field), arg)`,
+					Sql:     `.Where(sql, arg)`,
 					Args:    []string{"arg T"},
 				},
 				SelectFilter{
-					Model:   t,
-					Name:    "Between",
+					Model: t,
+					Name:  "Between",
+					Pre: `sql := fmt.Sprintf("%s.%s BETWEEN ? AND ?", f.table, f.field)
+					`,
 					Comment: `Only include Records with a field value in a specified range`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s BETWEEN ? AND ?", f.table, f.field), from, to)`,
+					Sql:     `.Where(sql, from, to)`,
 					Args:    []string{"from T", "to T"},
 				},
 			)
@@ -214,10 +246,12 @@ func GetFilterMethods(tables []*PostgresTable, driver string) []FilterMethod {
 		if t == "FilterArrayField" {
 			method.Filters = append(method.Filters,
 				SelectFilter{
-					Model:   t,
-					Name:    "Contains",
+					Model: t,
+					Name:  "Contains",
+					Pre: `sql := fmt.Sprintf("%s.%s @> ?", f.table, f.field)
+					`,
 					Comment: `Check if a array field contains a specific value`,
-					Sql:     `.Where(fmt.Sprintf("%s.%s @> ?", f.table, f.field), pq.Array(args))`,
+					Sql:     `.Where(sql, pq.Array(args))`,
 					Args:    []string{"args T"},
 				},
 			)

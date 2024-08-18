@@ -202,3 +202,8 @@ func limitFirst(cond SelectBuilder) SelectBuilder {
 	return cond.Offset(0).Limit(1)
 }
 
+type DBContext struct {
+    db DbPgx
+    tx pgx.Tx
+}
+

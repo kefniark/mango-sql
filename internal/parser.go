@@ -140,8 +140,6 @@ func parseSelectQuery(schema *core.SQLSchema, stmt *tree.SelectClause, macro []c
 		return
 	}
 
-	fmt.Println("> Query", query)
-
 	schema.Queries = append(schema.Queries, *query)
 }
 
@@ -182,7 +180,7 @@ func findTableDeps(schema *core.SQLSchema, table *tree.SelectClause, macro []cor
 				walk(ctx, s.Select)
 			case *tree.TableName:
 				ctx.tables = append(ctx.tables, s.TableName.Normalize())
-				fmt.Println("TableName", s.TableName)
+				// fmt.Println("TableName", s.TableName)
 				query.From = s.String()
 			case *tree.AliasedTableExpr:
 				subCtx := &FindTableDepsCtx{}
@@ -192,12 +190,12 @@ func findTableDeps(schema *core.SQLSchema, table *tree.SelectClause, macro []cor
 					Names: subCtx.tables,
 					As:    s.As.Alias.Normalize(),
 				})
-				fmt.Println("AliasedTableExpr", s)
+				// fmt.Println("AliasedTableExpr", s)
 			case *tree.JoinTableExpr:
 				walk(ctx, s.Left)
 				walk(ctx, s.Right)
 				query.From = s.String()
-				fmt.Println("JoinTableExpr", s)
+				// fmt.Println("JoinTableExpr", s)
 			case *tree.Where:
 				if s != nil && s.Expr != nil {
 					query.Where = s.Expr.String()

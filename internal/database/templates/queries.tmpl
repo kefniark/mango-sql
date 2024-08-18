@@ -5,7 +5,7 @@
 //     // ...
 //   })
 func (q *{{ .NameNormalized }}Queries) Insert(input {{ .NameNormalized }}Create) (*{{ .NameNormalized }}Model, error) {
-	sql := `{{ .GetCreateSqlContent }}`
+	const sql = `{{ .GetCreateSqlContent }}`
 	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
 }
 
@@ -16,8 +16,8 @@ func (q *{{ .NameNormalized }}Queries) Insert(input {{ .NameNormalized }}Create)
 //     // ...
 //   })
 func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}Create) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
-	sql := `{{ .GetCreateManySqlContent }}`
-	ids := []{{ .NameNormalized }}PrimaryKeySerialized{}
+	const sql = `{{ .GetCreateManySqlContent }}`
+	ids := make([]{{ .NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
 		records := make([]{{ .NameNormalized }}Update, len(chunk))
 		for i, input := range chunk {
@@ -50,7 +50,7 @@ func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}
 //     // ...
 //   })
 func (q *{{ .NameNormalized }}Queries) Upsert(input {{ .NameNormalized }}Update) (*{{ .NameNormalized }}Model, error) {
-	sql := `{{ .GetUpsertSqlContent }}`
+	const sql = `{{ .GetUpsertSqlContent }}`
 	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }});
 }
 
@@ -61,8 +61,8 @@ func (q *{{ .NameNormalized }}Queries) Upsert(input {{ .NameNormalized }}Update)
 //     // ...
 //   })
 func (q *{{ .NameNormalized }}Queries) UpsertMany(inputs []{{ .NameNormalized }}Update) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
-	sql := `{{ .GetUpsertManySqlContent }}`
-	ids := []{{ .NameNormalized }}PrimaryKeySerialized{}
+	const sql = `{{ .GetUpsertManySqlContent }}`
+	ids := make([]{{ .NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
 		data, err := json.Marshal(chunk)
 		if err != nil {
@@ -86,7 +86,7 @@ func (q *{{ .NameNormalized }}Queries) UpsertMany(inputs []{{ .NameNormalized }}
 //     // ...
 //   })
 func (q *{{ .NameNormalized }}Queries) Update(input {{ .NameNormalized }}Update) (*{{ .NameNormalized }}Model, error) {
-	sql := `{{ .GetUpdateSqlContent }}`
+	const sql = `{{ .GetUpdateSqlContent }}`
 	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }})
 }
 
@@ -97,8 +97,8 @@ func (q *{{ .NameNormalized }}Queries) Update(input {{ .NameNormalized }}Update)
 //     // ...
 //   })
 func (q *{{ .NameNormalized }}Queries) UpdateMany(inputs []{{ .NameNormalized }}Update) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
-	sql := `{{ .GetUpdateManySqlContent }}`
-	ids := []{{ .NameNormalized }}PrimaryKeySerialized{}
+	const sql = `{{ .GetUpdateManySqlContent }}`
+	ids := make([]{{ .NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
 		data, err := json.Marshal(chunk)
 		if err != nil {
