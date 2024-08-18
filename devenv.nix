@@ -11,9 +11,11 @@
     pkgs.golangci-lint
     pkgs.gocover-cobertura
 
-    # Goose
-    pkgs.goose
+    # NodeJS (docs)
+    pkgs.nodejs_20
 
+    # CLI Tools
+    pkgs.goose
     pkgs.just
   ];
 

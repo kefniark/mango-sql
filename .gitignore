@@ -12,6 +12,9 @@ coverage.*
 *.test
 bin/
 codegen/test/
+node_modules/
+docs/.vitepress/dist/
+docs/.vitepress/cache/
 
 tests/**/client.go
 dist/
