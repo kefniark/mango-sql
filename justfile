@@ -9,14 +9,19 @@ lint:
 
 generate:
     # tests
-    go run ./cmd/mangosql/ --output ./tests/postgres/auto-increment/client.go --package autoincrement ./tests/postgres/auto-increment/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/postgres/composite/client.go --package composite ./tests/postgres/composite/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/postgres/types/client.go --package types ./tests/postgres/types/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/postgres/auto-increment/client.go --package autoincrement --logger console ./tests/postgres/auto-increment/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/postgres/composite/client.go --package composite --logger console ./tests/postgres/composite/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/postgres/types/client.go --package types --logger console ./tests/postgres/types/schema.sql
 
-    # queries
-    go run ./cmd/mangosql/ --output ./tests/queries/pq/client.go --package pq --driver pq ./tests/queries/sqlited/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/queries/pgx/client.go --package pgx ./tests/queries/sqlited/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/queries/sqlited/client.go --package sqlited --driver sqlite ./tests/queries/sqlited/schema.sql
+    # test loggers
+    go run ./cmd/mangosql/ --output ./tests/logger/zap-logger/client.go --package zaplogger --logger zap ./tests/logger/zap-logger/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/logger/logrus-logger/client.go --package logruslogger --logger logrus ./tests/logger/logrus-logger/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/logger/zerolog-logger/client.go --package zerologlogger --logger zerolog ./tests/logger/zerolog-logger/schema.sql
+
+    # test queries
+    go run ./cmd/mangosql/ --output ./tests/queries/pq/client.go --package pq --driver pq --logger console ./tests/queries/sqlited/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/queries/pgx/client.go --package pgx --logger console ./tests/queries/sqlited/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/queries/sqlited/client.go --package sqlited --driver sqlite --logger console ./tests/queries/sqlited/schema.sql
 
     # bench
     mkdir -p ./tests/bench/pq
@@ -28,6 +33,7 @@ generate:
 
 bench:
     CGO_ENABLED=0 go test -bench=. -benchmem ./tests/bench | tee bench.log
+    # go run ./cmd/bench/
 
 test: generate
     go test -race --cover --coverprofile=coverage.txt ./...
