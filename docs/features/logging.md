@@ -10,13 +10,15 @@ This logging feature is opt-in and comes with:
 * **warning** for slow queries, when a query takes more than >500ms
 * Every SQL error will be automatically logged as **error**
 
-::: tips
+::: tip
 
-    During development, we recommend to set the log level to `DebugLevel` to see the SQL queries generated and how long they take.
+During development, we recommend to set the log level to `DebugLevel` to see the SQL queries generated and how long they take.
 
 :::
 
-## Logrus (https://github.com/sirupsen/logrus) { #logrus }
+## Logrus
+
+**Url**: https://github.com/sirupsen/logrus
 
 Add `--logger logrus` to the cli command
 
@@ -41,7 +43,9 @@ logger := logrus.New()
 return New(db, logger)
 ```
 
-## Zap (https://github.com/uber-go/zap) { #zap }
+## Zap
+
+**Url**: https://github.com/uber-go/zap
 
 Add `--logger zap` to the cli command
 
@@ -66,7 +70,9 @@ logger, _ := zap.NewProduction()
 return New(db, logger)
 ```
 
-## Zerolog (https://github.com/rs/zerolog) { #zerolog }
+## Zerolog
+
+Url: https://github.com/rs/zerolog
 
 Add `--logger zerolog` to the cli command
 

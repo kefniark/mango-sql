@@ -6,25 +6,26 @@
 
 ## Description
 
-MangoSQL is a fresh and juicy SQL code generator.
+**MangoSQL** is a fresh and juicy SQL code generator.
 
 1. You provide your database schema (.sql files)
 2. You run MangoSQL cli to generate a client with type-safe interfaces and queries
 3. You write application code that calls the generated code
 
-The perfect choice if you don't want an ORM, but don't want to write all your application queries by hand either.
-This is inspired by [SQLC](https://github.com/sqlc-dev/sqlc), but pushes the idea farther by supporting batching, relations and dynamic queries.
+**MangoSQL** is the perfect choice if you don't want an heavy ORM, but don't want to write all the SQL queries by hand like a caveman either.
+Originally inspired by [SQLC](https://github.com/sqlc-dev/sqlc), but pushes the idea farther by natively supporting batching, relations and dynamic queries.
 
 ## Features
 
-* **Convenient**: All the structs are generated for you, No need to write manually DTO/PDO
-* **Time Saver**: All the basic queries (CRUD) are generated from your schema alone, less queries to write
-* **Developer Friendly**: The code generated contains comments, examples and is designed with IDE autocompletion in mind 
-* **Flexible**: Provide a way to run dynamic queries (pagination, search, ...)
-* **Composable**: Use auto-generated query filters or make your owns and reuse them across queries
+* **Convenient**: All the structs are generated for you, No need to manually write any [DTO/PDO](https://en.wikipedia.org/wiki/Data_transfer_object)
+* **Time Saver**: All the basic [CRUD queries](https://en.wikipedia.org/wiki/Create,_read,_update_and_delete) are generated from your schema alone, less queries to write
 * **Safe**: All the SQL queries use prepared statement to avoid injection
 * **Consistent**: Easy to use transaction API to rollback when an error occurs
+* **Fast**: Get the performances of a handmade `sql.go` in an instant
 
+## Links
+* [Getting Started](https://kefniark.github.io/mango-sql/getting-started/)
+* [](https://kefniark.github.io/mango-sql/getting-started/)
 ## Getting Started
 
 ```sh
@@ -69,20 +70,14 @@ db := database.New(sqlDb)
 // then you can use it and make queries or transactions
 
 // Handle crud operation
-user, err := db.User.Create(database.UserCreate{
+user, err := db.User.Insert(database.UserCreate{
     Name: "user1",
     Email: "user1@email.com"
-})
-
-// Handle transactions
-err := db.Transaction(func(tx *database.DBClient) error {
-    // ...
 })
 
 // Typed dynamic clauses (filters, pagination, ...) with typed helpers
 users, err := db.User.FindMany(
     db.User.Query.Name.Like("%user%"),
-    db.User.Query.Amount.MoreThan(0),
     db.User.Query.Limit(20)
 )
 
@@ -91,17 +86,6 @@ users, err := db.User.FindMany(func(query SelectBuilder) SelectBuilder {
 	return query.Where("name ILIKE $1 OR name ILIKE $2", "%user1%", "%user2%")
 })
 
-// Handle Batching
-ids, err := db.User.UpsertMany([]database.UserUpdate{
-    {Email: "usernew@localhost", Name: "usernew"}, // this entry will be inserted
-    {Id: id, Email: "user1-updated", Name: "user1-updated"}, // this entry will be updated
-})
-
-// Use Struct Helpers
-user, _ := db.User.FindById(id)
-user.name = "NewName"
-user.Save(db)
-
-// ...
+// To know more about MangoSQL APIs ... RTFM ^^
 
 ```

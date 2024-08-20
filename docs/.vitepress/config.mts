@@ -25,6 +25,7 @@ export default defineConfig({
         items: [
           { text: 'Mutations', link: '/api/mutations' },
           { text: 'Queries', link: '/api/queries' },
+          { text: 'Filtering & Sorting', link: '/api/filtering' },
           { text: 'Transactions', link: '/api/transactions' },
           { text: 'Custom Queries', link: '/api/custom-queries' },
         ]
@@ -33,8 +34,8 @@ export default defineConfig({
         text: 'Advanced Features',
         items: [
           // { text: 'UUID Generation', link: '/api/mutations' },
-          { text: 'Soft Delete', link: '/features/soft-delete' },
           { text: 'Logging', link: '/features/logging' },
+          { text: 'Soft Delete', link: '/features/soft-delete' },
           // { text: 'Migrations', link: '/api/mutations' },
           { text: 'Benchmark', link: '/bench/bench' },
         ]
