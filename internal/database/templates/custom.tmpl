@@ -1,16 +1,16 @@
-{{ if len . }}
+{{ if len .Queries }}
 type CustomQueries struct {
 	ctx *DBContext
 }
 
-{{ range . }}
+{{ range .Queries }}
     // Find {{ .NameNormalized }} records based on the provided conditions
     //
     // Usage:
     //   entities, err := db.Queries.{{ .NameNormalized }}(
     //     // ... can use filters here (cf db.{{ .NameNormalized }}.Query.*)
     //   )
-    func (q *CustomQueries) {{ .NameNormalized }}(filters ...WhereCondition) ([]{{ .NameNormalized }}Model, error ) {
+    func (q *CustomQueries) {{ .NameNormalized }}(filters ...WhereCondition) (requestData []{{ .NameNormalized }}Model, requestErr error ) {
         query := squirrel.Select("{{ .Select }}")
         query = query.From("{{ .From }}").PlaceholderFormat(placeholder)
 {{ if .Where }}        query = query.Where("{{ .Where }}")
@@ -23,7 +23,11 @@ type CustomQueries struct {
         sql, args, err := query.ToSql()
         if err != nil {
             return nil, err
-        }
+        }{{ if $.Logger.HasLogger }}
+        start := time.Now()
+        defer func() {
+            q.ctx.logQuery(Debug, "DB.Queries.{{ .NameNormalized }}", requestErr, time.Since(start), sql, args)
+        }(){{ end }}
 
         return QueryMany[{{ .NameNormalized }}Model](q.ctx, sql, args...)
     }

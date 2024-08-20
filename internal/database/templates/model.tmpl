@@ -1,97 +1,97 @@
-// Table {{ .Name }}
+// Table {{ .Table.Name }}
 
-var {{ .NameNormalized }}Fields = []string{ {{ range .Columns }} "{{ .Name }}",{{ end }} }
+var {{ .Table.NameNormalized }}Fields = []string{ {{ range .Table.Columns }} "{{ .Name }}",{{ end }} }
 
-{{ if .HasCompositeId }}
-type {{ .NameNormalized }}PrimaryKey struct {
-{{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ if .Table.HasCompositeId }}
+type {{ .Table.NameNormalized }}PrimaryKey struct {
+{{ range .Table.ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}
 }
-type {{ .NameNormalized }}PrimaryKeySerialized = {{ .NameNormalized }}PrimaryKey
+type {{ .Table.NameNormalized }}PrimaryKeySerialized = {{ .Table.NameNormalized }}PrimaryKey
 {{ else }}
-type {{ .NameNormalized }}PrimaryKey = {{ (index .ColumnIds 0).Type }}
-type {{ .NameNormalized }}PrimaryKeySerialized struct {
-{{ range .ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+type {{ .Table.NameNormalized }}PrimaryKey = {{ (index .Table.ColumnIds 0).Type }}
+type {{ .Table.NameNormalized }}PrimaryKeySerialized struct {
+{{ range .Table.ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}
 }
 {{ end }}
 
-type {{ .NameNormalized }}Model struct {
-{{ range .Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+type {{ .Table.NameNormalized }}Model struct {
+{{ range .Table.Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}}
 
-type {{ .NameNormalized }}Create struct {
-{{ if not .HasCompositeId }}
-{{ range .ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+type {{ .Table.NameNormalized }}Create struct {
+{{ if not .Table.HasCompositeId }}
+{{ range .Table.ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}
 {{ else }}
-{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ range .Table.ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}
 {{ end }}}
 
-type {{ .NameNormalized }}Update struct {
-{{ range .ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+type {{ .Table.NameNormalized }}Update struct {
+{{ range .Table.ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
 {{ end }}}
 
-type {{ .NameNormalized }}Queries struct {
+type {{ .Table.NameNormalized }}Queries struct {
     ctx *DBContext
-    // Used to modify {{ .NameNormalized }} queries (filter, pagination, search, ...)
+    // Used to modify {{ .Table.NameNormalized }} queries (filter, pagination, search, ...)
     //
     // Usage:
-    //   users, err := db.{{ .NameNormalized }}.FindMany(
-    //     db.{{ .NameNormalized }}.Query.DeletedAt.IsNotNull(),
-    //     db.{{ .NameNormalized }}.Query.Name.OrderAsc(),
+    //   users, err := db.{{ .Table.NameNormalized }}.FindMany(
+    //     db.{{ .Table.NameNormalized }}.Query.DeletedAt.IsNotNull(),
+    //     db.{{ .Table.NameNormalized }}.Query.Name.OrderAsc(),
     //     # add more conditions ...
     //   )
-    Query {{ .NameNormalized }}Filters
+    Query {{ .Table.NameNormalized }}Filters
 }
 
-type {{ .NameNormalized }}Filters struct {
-{{ range.GetFieldFilters }}{{ .Name }} {{ .Type }}[{{ .FieldType }}]
+type {{ .Table.NameNormalized }}Filters struct {
+{{ range .Table.GetFieldFilters }}{{ .Name }} {{ .Type }}[{{ .FieldType }}]
 {{ end }}
 }
 
-func ({{ .NameNormalized }}Filters) Offset(val uint64) WhereCondition {
+func ({{ .Table.NameNormalized }}Filters) Offset(val uint64) WhereCondition {
     return func(cond SelectBuilder) SelectBuilder {
 		return cond.Offset(val)
 	}
 }
 
-func ({{ .NameNormalized }}Filters) Limit(val uint64) WhereCondition {
+func ({{.Table.NameNormalized }}Filters) Limit(val uint64) WhereCondition {
     return func(cond SelectBuilder) SelectBuilder {
 		return cond.Limit(val)
 	}
 }
 
-func ({{ .NameNormalized }}Filters) Distinct() WhereCondition {
+func ({{ .Table.NameNormalized }}Filters) Distinct() WhereCondition {
     return func(cond SelectBuilder) SelectBuilder {
 		return cond.Distinct()
 	}
 }
 
-// Create a new {{ .NameNormalized }}Model instance (not automatically saved in database)
+// Create a new {{ .Table.NameNormalized }}Model instance (not automatically saved in database)
 //
 // Example :
-//   {{ .Name }} = db.{{ .NameNormalized }}.New()
-//   {{ .Name }}.Name = "newName"
-//   // ... manipulate the {{ .Name }} entity
-//   err = {{ .Name }}.Save(db)
-func (q *{{ .NameNormalized }}Queries) New() *{{ .NameNormalized }}Model {
-    return &{{ .NameNormalized }}Model{
-        {{ range .GetPrimaryKeyConstructors }}{{ .Name }}: {{ .Init }},
+//   {{ .Table.Name }} = db.{{ .Table.NameNormalized }}.New()
+//   {{ .Table.Name }}.Name = "newName"
+//   // ... manipulate the {{ .Table.Name }} entity
+//   err = {{ .Table.Name }}.Save(db)
+func (q *{{ .Table.NameNormalized }}Queries) New() *{{ .Table.NameNormalized }}Model {
+    return &{{ .Table.NameNormalized }}Model{
+        {{ range .Table.GetPrimaryKeyConstructors }}{{ .Name }}: {{ .Init }},
         {{ end }}
     }
 }
 
-// Save a {{ .NameNormalized }}Model
+// Save a {{ .Table.NameNormalized }}Model
 //
 // Usage:
 //   user, err = db.User.FindById(id)
 //   user.Name = "newName"
 //   err = user.Save(db)
-func (q *{{ .NameNormalized }}Model) Save(db *DBClient) error {
-    data, err := db.{{ .NameNormalized }}.Upsert({{ .NameNormalized }}Update{
-        {{ range .ColumnsUpdate }}          {{ .NameNormalized }}: q.{{ .NameNormalized }},
+func (q *{{ .Table.NameNormalized }}Model) Save(db *DBClient) error {
+    data, err := db.{{ .Table.NameNormalized }}.Upsert({{ .Table.NameNormalized }}Update{
+        {{ range .Table.ColumnsUpdate }}          {{ .NameNormalized }}: q.{{ .NameNormalized }},
         {{ end }}
     })
     *q = *data

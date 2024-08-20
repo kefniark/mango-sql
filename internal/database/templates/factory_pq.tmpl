@@ -13,6 +13,16 @@ type DBClient struct {
 	Queries *CustomQueries{{ end }}
 }
 
+// Create a new instance of MangoSql
+func New(db *sqlx.DB {{ if and .Logger.HasLogger .Logger.HasLoggerParam }}, logger {{ .Logger.Type }}{{ end }}) *DBClient {
+    return newClient(&DBContext{
+		db:       db,
+		prepared: make(map[string]*sqlx.Stmt),
+		tx:       nil,{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
+		logger: logger,{{ end }}
+	})
+}
+
 func newClient(ctx *DBContext) *DBClient {
     return &DBClient{
         ctx: ctx,
@@ -47,15 +57,6 @@ func (f {{ .Model }}[T]) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCon
 
 {{ end }}{{ end }}
 
-// Create a new instance of MangoSql
-func New(db *sqlx.DB) *DBClient {
-    return newClient(&DBContext{
-		db:       db,
-		prepared: make(map[string]*sqlx.Stmt),
-		tx:       nil,
-	})
-}
-
 // Create a new Sql transaction.
 // If any error or panic occurs inside, the transaction is automatically rollback
 //
@@ -82,7 +83,8 @@ func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e er
 	client := newClient(&DBContext{
 		db:       db.ctx.db,
 		prepared: db.ctx.prepared,
-		tx:       tx,
+		tx:       tx,{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
+		logger:	  db.ctx.logger,{{ end }}
 	})
 	if err = transaction(client); err != nil {
 		return errors.Join(err, tx.Rollback())
@@ -189,7 +191,8 @@ func limitFirst(cond SelectBuilder) SelectBuilder {
 
 type DBContext struct {
     db *sqlx.DB
-    tx *sqlx.Tx
+    tx *sqlx.Tx{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
+	logger {{ .Logger.Type }}{{ end }}
     prepared map[string]*sqlx.Stmt
 }
 
