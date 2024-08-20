@@ -8,6 +8,7 @@ require (
 	github.com/Masterminds/squirrel v1.5.4
 	github.com/auxten/postgresql-parser v1.0.1
 	github.com/gertd/go-pluralize v0.2.1
+	github.com/go-echarts/go-echarts/v2 v2.4.1
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jackc/pgx/v5 v5.6.0

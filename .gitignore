@@ -10,6 +10,8 @@ devenv.local.nix
 
 coverage.*
 *.test
+*.log
+
 bin/
 codegen/test/
 node_modules/

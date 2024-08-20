@@ -1,31 +1,39 @@
-// Insert a {{ .NameNormalized }} and return the created row
+// Insert a {{ .Table.NameNormalized }} and return the created row
 //
 // Usage:
-//   entity, err := db.{{ .NameNormalized }}.Insert({{ .NameNormalized }}Create{
+//   entity, err := db.{{ .Table.NameNormalized }}.Insert({{ .Table.NameNormalized }}Create{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) Insert(input {{ .NameNormalized }}Create) (*{{ .NameNormalized }}Model, error) {
-	const sql = `{{ .GetCreateSqlContent }}`
-	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
+func (q *{{ .Table.NameNormalized }}Queries) Insert(input {{ .Table.NameNormalized }}Create) (requestData *{{ .Table.NameNormalized }}Model, requestErr error) {
+	const sql = `{{ .Table.GetCreateSqlContent }}`{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Insert", requestErr, time.Since(start), sql, input)
+	}(){{ end }}
+	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .Table.ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
 }
 
-// Batch Insert {{ .NameNormalized }}
+// Batch Insert {{ .Table.NameNormalized }}
 //
 // Usage:
-//   entities, err := db.{{ .NameNormalized }}.InsertMany([]{{ .NameNormalized }}Create{
+//   entities, err := db.{{ .Table.NameNormalized }}.InsertMany([]{{ .Table.NameNormalized }}Create{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}Create) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
-	const sql = `{{ .GetCreateManySqlContent }}`
-	ids := make([]{{ .NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
+func (q *{{ .Table.NameNormalized }}Queries) InsertMany(inputs []{{ .Table.NameNormalized }}Create) (requestData []{{ .Table.NameNormalized }}PrimaryKeySerialized, requestErr error) {
+	const sql = `{{ .Table.GetCreateManySqlContent }}`{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.InsertMany", requestErr, time.Since(start), sql, inputs)
+	}(){{ end }}
+	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
-		records := make([]{{ .NameNormalized }}Update, len(chunk))
+		records := make([]{{ .Table.NameNormalized }}Update, len(chunk))
 		for i, input := range chunk {
-			records[i] = {{ if and (not .HasCompositeId) (not .HasStructCopy) }}{{ .NameNormalized }}Update{
-				{{ range .GetPrimaryKeyConstructors }}          {{ .Name }}: {{ .Init }},
-        		{{ end }}{{ range .ColumnsCreate }}          {{ .NameNormalized }}: input.{{ .NameNormalized }},
+			records[i] = {{ if and (not .Table.HasCompositeId) (not .Table.HasStructCopy) }}{{ .Table.NameNormalized }}Update{
+				{{ range .Table.GetPrimaryKeyConstructors }}          {{ .Name }}: {{ .Init }},
+        		{{ end }}{{ range .Table.ColumnsCreate }}          {{ .NameNormalized }}: input.{{ .NameNormalized }},
 				{{ end }}
-			}{{ else }}{{ .NameNormalized }}Update(input){{ end }}
+			}{{ else }}{{ .Table.NameNormalized }}Update(input){{ end }}
 		}
 
 		data, err := json.Marshal(records)
@@ -33,7 +41,7 @@ func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}
 			return nil, err
 		}
 
-		if res, err := QueryMany[{{ .NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
+		if res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
 			return nil, err
 		} else {
 			ids = append(ids, res...)
@@ -43,33 +51,41 @@ func (q *{{ .NameNormalized }}Queries) InsertMany(inputs []{{ .NameNormalized }}
 	return ids, nil
 }
 
-// Upsert a {{ .NameNormalized }} (create or update if already exist) and return the updated row
+// Upsert a {{ .Table.NameNormalized }} (create or update if already exist) and return the updated row
 //
 // Usage:
-//   entity, err := db.{{ .NameNormalized }}.Upsert({{ .NameNormalized }}Update{
+//   entity, err := db.{{ .Table.NameNormalized }}.Upsert({{ .Table.NameNormalized }}Update{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) Upsert(input {{ .NameNormalized }}Update) (*{{ .NameNormalized }}Model, error) {
-	const sql = `{{ .GetUpsertSqlContent }}`
-	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }});
+func (q *{{ .Table.NameNormalized }}Queries) Upsert(input {{ .Table.NameNormalized }}Update) (requestData *{{ .Table.NameNormalized }}Model, requestErr error) {
+	const sql = `{{ .Table.GetUpsertSqlContent }}`{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Upsert", requestErr, time.Since(start), sql, input)
+	}(){{ end }}
+	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }});
 }
 
-// Batch Upsert {{ .NameNormalized }} (create or update if already exist)
+// Batch Upsert {{ .Table.NameNormalized }} (create or update if already exist)
 //
 // Usage:
-//   entities, err := db.{{ .NameNormalized }}.UpsertMany([]{{ .NameNormalized }}Update{
+//   entities, err := db.{{ .Table.NameNormalized }}.UpsertMany([]{{ .Table.NameNormalized }}Update{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) UpsertMany(inputs []{{ .NameNormalized }}Update) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
-	const sql = `{{ .GetUpsertManySqlContent }}`
-	ids := make([]{{ .NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
+func (q *{{ .Table.NameNormalized }}Queries) UpsertMany(inputs []{{ .Table.NameNormalized }}Update) (requestData []{{ .Table.NameNormalized }}PrimaryKeySerialized, requestErr error) {
+	const sql = `{{ .Table.GetUpsertManySqlContent }}`{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.UpsertMany", requestErr, time.Since(start), sql, inputs)
+	}(){{ end }}
+	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
 		data, err := json.Marshal(chunk)
 		if err != nil {
 			return nil, err
 		}
 
-		if res, err := QueryMany[{{ .NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
+		if res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
 			return nil, err
 		} else {
 			ids = append(ids, res...)
@@ -79,33 +95,41 @@ func (q *{{ .NameNormalized }}Queries) UpsertMany(inputs []{{ .NameNormalized }}
 	return ids, nil
 }
 
-// Update a {{ .NameNormalized }} and return the updated row
+// Update a {{ .Table.NameNormalized }} and return the updated row
 //
 // Usage:
-//   entity, err := db.{{ .NameNormalized }}.Update({{ .NameNormalized }}Update{
+//   entity, err := db.{{ .Table.NameNormalized }}.Update({{ .Table.NameNormalized }}Update{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) Update(input {{ .NameNormalized }}Update) (*{{ .NameNormalized }}Model, error) {
-	const sql = `{{ .GetUpdateSqlContent }}`
-	return QueryOne[{{ .NameNormalized }}Model](q.ctx, sql, {{ range .ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }})
+func (q *{{ .Table.NameNormalized }}Queries) Update(input {{ .Table.NameNormalized }}Update) (requestData *{{ .Table.NameNormalized }}Model, requestErr error) {
+	const sql = `{{ .Table.GetUpdateSqlContent }}`{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Update", requestErr, time.Since(start), sql, input)
+	}(){{ end }}
+	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }})
 }
 
-// Batch Update {{ .NameNormalized }}
+// Batch Update {{ .Table.NameNormalized }}
 //
 // Usage:
-//   entities, err := db.{{ .NameNormalized }}.UpdateMany([]{{ .NameNormalized }}Update{
+//   entities, err := db.{{ .Table.NameNormalized }}.UpdateMany([]{{ .Table.NameNormalized }}Update{
 //     // ...
 //   })
-func (q *{{ .NameNormalized }}Queries) UpdateMany(inputs []{{ .NameNormalized }}Update) ([]{{ .NameNormalized }}PrimaryKeySerialized, error) {
-	const sql = `{{ .GetUpdateManySqlContent }}`
-	ids := make([]{{ .NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
+func (q *{{ .Table.NameNormalized }}Queries) UpdateMany(inputs []{{ .Table.NameNormalized }}Update) (requestData []{{ .Table.NameNormalized }}PrimaryKeySerialized, requestErr error) {
+	const sql = `{{ .Table.GetUpdateManySqlContent }}`{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.UpdateMany", requestErr, time.Since(start), sql, inputs)
+	}(){{ end }}
+	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
 		data, err := json.Marshal(chunk)
 		if err != nil {
 			return nil, err
 		}
 
-		if res, err := QueryMany[{{ .NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
+		if res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
 			return nil, err
 		} else {
 			ids = append(ids, res...)
@@ -115,46 +139,56 @@ func (q *{{ .NameNormalized }}Queries) UpdateMany(inputs []{{ .NameNormalized }}
 	return ids, nil
 }
 
-{{ if .GetDeleteSoftSqlName }}// Delete a {{ .NameNormalized }} (soft delete, data are still in the database)
+{{ if .Table.GetDeleteSoftSqlName }}// Delete a {{ .Table.NameNormalized }} (soft delete, data are still in the database)
 //
 // Usage:
-//   err := db.{{ .NameNormalized }}.DeleteSoft(id)
-func (q *{{ .NameNormalized }}Queries) DeleteSoft(id {{ .NameNormalized }}PrimaryKey) error {
-	return Exec(q.ctx, `{{ .GetDeleteSoftSqlContent }}`, id)
+//   err := db.{{ .Table.NameNormalized }}.DeleteSoft(id)
+func (q *{{ .Table.NameNormalized }}Queries) DeleteSoft(id {{ .Table.NameNormalized }}PrimaryKey) (requestErr error) {
+	sql := `{{ .Table.GetDeleteSoftSqlContent }}`{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.DeleteSoft", requestErr, time.Since(start), sql, id)
+	}(){{ end }}
+	return Exec(q.ctx, sql, id)
 }
 
-// Delete a {{ .NameNormalized }} (soft delete, data are still in the database)
-func (q *{{ .NameNormalized }}Model) DeleteSoft(db *DBClient) error {
-   {{ if .HasCompositeId }}return db.{{ .NameNormalized }}.DeleteSoft({{ .NameNormalized }}PrimaryKey{
-		{{ range .ColumnIds }}    {{ .NameNormalized }}: q.{{ .NameNormalized }},
+// Delete a {{ .Table.NameNormalized }} (soft delete, data are still in the database)
+func (q *{{ .Table.NameNormalized }}Model) DeleteSoft(db *DBClient) error {
+   {{ if .Table.HasCompositeId }}return db.{{ .Table.NameNormalized }}.DeleteSoft({{ .Table.NameNormalized }}PrimaryKey{
+		{{ range .Table.ColumnIds }}    {{ .NameNormalized }}: q.{{ .NameNormalized }},
 		{{ end }}
-	}){{ else }}return db.{{ .NameNormalized }}.DeleteSoft(q.Id){{ end }}
+	}){{ else }}return db.{{ .Table.NameNormalized }}.DeleteSoft(q.Id){{ end }}
 }{{end}}
 
-// Delete a {{ .NameNormalized }} (hard delete, data are removed from the database)
+// Delete a {{ .Table.NameNormalized }} (hard delete, data are removed from the database)
 //
 // Usage:
-//   err := db.{{ .NameNormalized }}.DeleteHard(id)
-func (q *{{ .NameNormalized }}Queries) DeleteHard(id {{ .NameNormalized }}PrimaryKey) error {
-	return Exec(q.ctx, `{{ .GetDeleteHardSqlContent }}`, id)
+//   err := db.{{ .Table.NameNormalized }}.DeleteHard(id)
+func (q *{{ .Table.NameNormalized }}Queries) DeleteHard(id {{ .Table.NameNormalized }}PrimaryKey) (requestErr error) {
+	sql := `{{ .Table.GetDeleteHardSqlContent }}`{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.DeleteHard", requestErr, time.Since(start), sql, id)
+	}(){{ end }}
+	return Exec(q.ctx, sql, id)
 }
 
-// Delete a {{ .NameNormalized }} (hard delete, data are removed from the database)
-func (q *{{ .NameNormalized }}Model) DeleteHard(db *DBClient) error {
-	{{ if .HasCompositeId }}return db.{{ .NameNormalized }}.DeleteHard({{ .NameNormalized }}PrimaryKey{
-		{{ range .ColumnIds }}    {{ .NameNormalized }}: q.{{ .NameNormalized }},
+// Delete a {{ .Table.NameNormalized }} (hard delete, data are removed from the database)
+func (q *{{ .Table.NameNormalized }}Model) DeleteHard(db *DBClient) error {
+	{{ if .Table.HasCompositeId }}return db.{{ .Table.NameNormalized }}.DeleteHard({{ .Table.NameNormalized }}PrimaryKey{
+		{{ range .Table.ColumnIds }}    {{ .NameNormalized }}: q.{{ .NameNormalized }},
 		{{ end }}
-	}){{ else }}return db.{{ .NameNormalized }}.DeleteHard({{ range .ColumnIds }}q.{{ .NameNormalized }},{{ end }}){{ end }}
+	}){{ else }}return db.{{ .Table.NameNormalized }}.DeleteHard({{ range .Table.ColumnIds }}q.{{ .NameNormalized }},{{ end }}){{ end }}
 }
 
-// Count {{ .NameNormalized }} records based on filter conditions
+// Count {{ .Table.NameNormalized }} records based on filter conditions
 //
 // Usage:
-//   count, err := db.{{ .NameNormalized }}.Count(
-//     // ... can use filters here (cf db.{{ .NameNormalized }}.Query.*)
+//   count, err := db.{{ .Table.NameNormalized }}.Count(
+//     // ... can use filters here (cf db.{{ .Table.NameNormalized }}.Query.*)
 //   )
-func (q *{{ .NameNormalized }}Queries) Count(filters ...WhereCondition) (int, error) {
-	query := squirrel.Select("count(*)").From("{{ .Name }}").PlaceholderFormat(placeholder)
+func (q *{{ .Table.NameNormalized }}Queries) Count(filters ...WhereCondition) (requestData int, requestErr error) {
+	query := squirrel.Select("count(*)").From("{{ .Table.Name }}").PlaceholderFormat(placeholder)
 	for _, filter := range filters {
 		query = filter(query)
 	}
@@ -162,21 +196,25 @@ func (q *{{ .NameNormalized }}Queries) Count(filters ...WhereCondition) (int, er
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return 0, err
-	}
+	}{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Count", requestErr, time.Since(start), sql, args)
+	}(){{ end }}
 
 	var count int
 	err = QueryRow(q.ctx, &count, sql, args...)
 	return count, err
 }
 
-// Find {{ .NameNormalized }} records based on the provided conditions
+// Find {{ .Table.NameNormalized }} records based on the provided conditions
 //
 // Usage:
-//   entities, err := db.{{ .NameNormalized }}.FindMany(
-//     // ... can use filters here (cf db.{{ .NameNormalized }}.Query.*)
+//   entities, err := db.{{ .Table.NameNormalized }}.FindMany(
+//     // ... can use filters here (cf db.{{ .Table.NameNormalized }}.Query.*)
 //   )
-func (q *{{ .NameNormalized }}Queries) FindMany(filters ...WhereCondition) ([]{{ .NameNormalized }}Model, error) {
-	query := squirrel.Select({{ .NameNormalized }}Fields...).From("{{ .Name }}").PlaceholderFormat(placeholder)
+func (q *{{ .Table.NameNormalized }}Queries) FindMany(filters ...WhereCondition) (requestData []{{ .Table.NameNormalized }}Model, requestErr error) {
+	query := squirrel.Select({{ .Table.NameNormalized }}Fields...).From("{{ .Table.Name }}").PlaceholderFormat(placeholder)
 	for _, filter := range filters {
 		query = filter(query)
 	}
@@ -184,35 +222,39 @@ func (q *{{ .NameNormalized }}Queries) FindMany(filters ...WhereCondition) ([]{{
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return nil, err
-	}
+	}{{ if .Logger.HasLogger }}
+	start := time.Now()
+	defer func() {
+		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.FindMany", requestErr, time.Since(start), sql, args)
+	}(){{ end }}
 
-	return QueryMany[{{ .NameNormalized }}Model](q.ctx, sql, args...)
+	return QueryMany[{{ .Table.NameNormalized }}Model](q.ctx, sql, args...)
 }
 
-// Find one {{ .NameNormalized }} records based on the provided conditions
+// Find one {{ .Table.NameNormalized }} records based on the provided conditions
 //
 // Usage:
-//   entity, err := db.{{ .NameNormalized }}.FindUnique(
-//     // ... can use filters here (cf db.{{ .NameNormalized }}.Query.*)
+//   entity, err := db.{{ .Table.NameNormalized }}.FindUnique(
+//     // ... can use filters here (cf db.{{ .Table.NameNormalized }}.Query.*)
 //   )
-func (q *{{ .NameNormalized }}Queries) FindUnique(filters ...WhereCondition) (*{{ .NameNormalized }}Model, error) {
+func (q *{{ .Table.NameNormalized }}Queries) FindUnique(filters ...WhereCondition) (*{{ .Table.NameNormalized }}Model, error) {
 	filters = append(filters, limitFirst)
 	return first(q.FindMany(filters...))
 }
 
-{{ range .GetSelectPrimarySql }}
+{{ range .Table.GetSelectPrimarySql }}
 // Find {{ .Name }} By PrimaryKey
 //
 // Usage:
 //   entity, err := db.{{ .Name }}.{{ .Method }}(id)
 func (q *{{ .Name }}Queries) {{ .Method }}(id {{ .Name }}PrimaryKey) (*{{ .Name }}Model, error) {
 	return q.FindUnique(func(cond SelectBuilder) SelectBuilder {
-		{{ if $.HasCompositeId }}return cond{{ range $i, $f := .Fields }}.Where("{{ $f.Name }} = ${{ len (printf "a%*s" $i "") }}", id.{{ $f.NameNormalized }}){{ end }}
+		{{ if $.Table.HasCompositeId }}return cond{{ range $i, $f := .Fields }}.Where("{{ $f.Name }} = ${{ len (printf "a%*s" $i "") }}", id.{{ $f.NameNormalized }}){{ end }}
 		{{ else }}return cond{{ range .Fields }}.Where("{{ .Name }} = $1", id){{ end }}{{ end }}
 	})
 }
 
-{{ if not $.HasCompositeId }}// Batch Find {{ .Name }} By PrimaryKey
+{{ if not $.Table.HasCompositeId }}// Batch Find {{ .Name }} By PrimaryKey
 //
 // Usage:
 //   entities, err := db.{{ .Name }}.{{ .Method }}s(ids)

@@ -31,7 +31,7 @@ var customTypes = []FieldInitializer{
 	},
 }
 
-func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver string) error {
+func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver string, logger string) error {
 	templateType := ""
 	switch driver {
 	case "pgx":
@@ -46,6 +46,11 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 	}
 
 	factoryTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/factory_%s.tmpl", templateType))
+	if err != nil {
+		return err
+	}
+
+	loggerTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/logger_%s.tmpl", logger))
 	if err != nil {
 		return err
 	}
@@ -110,6 +115,38 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		placeholder = "squirrel.Question"
 	}
 
+	logConfig := LoggerConfig{}
+
+	switch logger {
+	case "zap":
+		deps["zap"] = "go.uber.org/zap"
+		deps["time"] = "time"
+		logConfig.HasLogger = true
+		logConfig.HasLoggerParam = true
+		logConfig.Type = `*zap.Logger`
+	case "logrus":
+		deps["logrus"] = "github.com/sirupsen/logrus"
+		deps["time"] = "time"
+		logConfig.HasLogger = true
+		logConfig.HasLoggerParam = true
+		logConfig.Type = `*logrus.Logger`
+	case "zerolog":
+		deps["zero"] = "github.com/rs/zerolog"
+		deps["time"] = "time"
+		logConfig.HasLogger = true
+		logConfig.HasLoggerParam = true
+		logConfig.Type = `zerolog.Logger`
+	case "console":
+		deps["log"] = "log"
+		deps["time"] = "time"
+
+		logConfig.HasLogger = true
+		logConfig.HasLoggerParam = false
+		logConfig.Type = ``
+	}
+
+	fmt.Println(logger, logConfig)
+
 	if err = headerTmpl.Execute(contents, HeaderData{
 		Package:     pkg,
 		Url:         "https://github.com/kefniark/mangosql",
@@ -125,25 +162,49 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		Tables  []*PostgresTable
 		Queries []*PostgresQuery
 		Filters []FilterMethod
+		Logger  LoggerConfig
 	}{
 		Tables:  postgresTables,
 		Queries: postgresQueries,
 		Filters: GetFilterMethods(postgresTables, driver),
+		Logger:  logConfig,
 	}); err != nil {
 		return err
 	}
 
+	if err = loggerTmpl.Execute(contents, nil); err != nil {
+		return err
+	}
+
 	for _, table := range postgresTables {
-		if err = modelTmpl.Execute(contents, table); err != nil {
+		if err = modelTmpl.Execute(contents, struct {
+			Table  *PostgresTable
+			Logger LoggerConfig
+		}{
+			Table:  table,
+			Logger: logConfig,
+		}); err != nil {
 			return err
 		}
 
-		if err = queriesTmpl.Execute(contents, table); err != nil {
+		if err = queriesTmpl.Execute(contents, struct {
+			Table  *PostgresTable
+			Logger LoggerConfig
+		}{
+			Table:  table,
+			Logger: logConfig,
+		}); err != nil {
 			return err
 		}
 	}
 
-	if err = customQueriesTmpl.Execute(contents, postgresQueries); err != nil {
+	if err = customQueriesTmpl.Execute(contents, struct {
+		Queries []*PostgresQuery
+		Logger  LoggerConfig
+	}{
+		Queries: postgresQueries,
+		Logger:  logConfig,
+	}); err != nil {
 		return err
 	}
 
@@ -788,4 +849,10 @@ type PrimaryFieldInit struct {
 	Name   string
 	Init   string
 	Setter string
+}
+
+type LoggerConfig struct {
+	HasLoggerParam bool
+	HasLogger      bool
+	Type           string
 }
