@@ -29,7 +29,12 @@ func newTestDB(t *testing.T) (*DBClient, func(), *observer.ObservedLogs) {
 
 	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core, zap.AddCallerSkip(1))
-	defer logger.Sync()
+	defer func() {
+		err := logger.Sync()
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	return New(db, logger), func() {
 		db.Close(context.Background())

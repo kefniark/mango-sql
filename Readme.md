@@ -15,6 +15,9 @@
 **MangoSQL** is the perfect choice if you don't want an heavy ORM, but don't want to write all the SQL queries by hand like a caveman either.
 Originally inspired by [SQLC](https://github.com/sqlc-dev/sqlc), but pushes the idea farther by natively supporting batching, relations and dynamic queries.
 
+**Links**:
+🚀 [Getting Started](https://kefniark.github.io/mango-sql/getting-started/) | 💻 [API Reference](https://kefniark.github.io/mango-sql/api/mutations.html) | 📈 [Benchmark](https://kefniark.github.io/mango-sql/bench/bench.html)
+
 ## Features
 
 * **Convenient**: All the structs are generated for you, No need to manually write any [DTO/PDO](https://en.wikipedia.org/wiki/Data_transfer_object)
@@ -23,21 +26,6 @@ Originally inspired by [SQLC](https://github.com/sqlc-dev/sqlc), but pushes the 
 * **Consistent**: Easy to use transaction API to rollback when an error occurs
 * **Fast**: Get the performances of a handmade `sql.go` in an instant
 
-## Links
-* [Getting Started](https://kefniark.github.io/mango-sql/getting-started/)
-* [](https://kefniark.github.io/mango-sql/getting-started/)
-## Getting Started
-
-```sh
-# Install MangoSQL CLI
-go install github.com/kefniark/mango-sql/cmd/mangosql
-
-# Use mango to generate a DB Client (by default ./database/client.go)
-mangosql ./database/schema.sql
-
-# Generated Go Code can be output somewhere else
-mangosql --output ./mydb/myclient.go --package mydb ./database/schema.sql
-```
 
 ## Example 
 
@@ -60,14 +48,7 @@ mangosql --output=database schema.sql
 
 This is all you need to do, now the client can be used in your code
 ```go
-sqlDb, err := sqlx.Connect("postgres", "Postgres Connection URL")
-if err != nil {
-    panic(err)
-}
-
-db := database.New(sqlDb)
-
-// then you can use it and make queries or transactions
+db := database.New(dbConnection)
 
 // Handle crud operation
 user, err := db.User.Insert(database.UserCreate{

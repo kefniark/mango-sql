@@ -168,11 +168,17 @@ func main() {
 		for _, op := range []string{"InsertMany", "FindMany"} {
 			f1, _ := os.Create(fmt.Sprintf("docs/public/bench_%s_%s_cpu.html", strings.ToLower(db), strings.ToLower(op)))
 			defer f1.Close()
-			generateInsertManyCPULines(data, op, db).Render(f1)
+			err := generateInsertManyCPULines(data, op, db).Render(f1)
+			if err != nil {
+				panic(err)
+			}
 
 			f2, _ := os.Create(fmt.Sprintf("docs/public/bench_%s_%s_alloc.html", strings.ToLower(db), strings.ToLower(op)))
 			defer f2.Close()
-			generateInsertManyAllocLines(data, op, db).Render(f2)
+			err = generateInsertManyAllocLines(data, op, db).Render(f2)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 }
