@@ -1,0 +1,31 @@
+type LogLevel int
+const (
+	Debug LogLevel = iota + 1
+	Info
+	Warn
+	Error
+)
+
+func (ctx DBContext) logQuery(level LogLevel, msg string, err error, duration time.Duration, sql string, args ...interface{}) {
+	if err != nil {
+		ctx.logger.WithError(err).WithField("args", args).WithField("sql", sql).Error(msg)
+		return
+	}
+
+	if level < Warn && duration > time.Millisecond*500 {
+		level = Warn
+		msg = "[SLOW QUERY] " + msg
+	}
+
+	switch level {
+	case Debug:
+		ctx.logger.WithField("duration", duration).WithField("args", args).WithField("sql", sql).Debug(msg)
+	case Info:
+		ctx.logger.WithField("duration", duration).WithField("args", args).WithField("sql", sql).Info(msg)
+	case Warn:
+		ctx.logger.WithField("duration", duration).WithField("args", args).WithField("sql", sql).Warn(msg)
+	case Error:
+		ctx.logger.WithField("duration", duration).WithField("args", args).WithField("sql", sql).Error(msg)
+	}
+}
+

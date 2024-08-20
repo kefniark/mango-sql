@@ -34,7 +34,7 @@ export default defineConfig({
         items: [
           // { text: 'UUID Generation', link: '/api/mutations' },
           { text: 'Soft Delete', link: '/features/soft-delete' },
-          // { text: 'Logging', link: '/api/mutations' },
+          { text: 'Logging', link: '/features/logging' },
           // { text: 'Migrations', link: '/api/mutations' },
         ]
       },

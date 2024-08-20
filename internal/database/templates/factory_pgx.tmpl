@@ -13,6 +13,15 @@ type DBClient struct {
 	Queries *CustomQueries{{ end }}
 }
 
+// Create a new instance of MangoSql
+func New(db DbPgx {{ if and .Logger.HasLogger .Logger.HasLoggerParam }}, logger {{ .Logger.Type }}{{ end }}) *DBClient {
+    return newClient(&DBContext{
+		db:       db,
+		tx:       nil,{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
+		logger: logger,{{ end }}
+	})
+}
+
 func newClient(ctx *DBContext) *DBClient {
     return &DBClient{
         ctx: ctx,
@@ -54,14 +63,6 @@ type DbPgx interface {
 	QueryRow(ctx context.Context, sql string, args ...any) pgx.Row
 }
 
-// Create a new instance of MangoSql
-func New(db DbPgx) *DBClient {
-    return newClient(&DBContext{
-		db:       db,
-		tx:       nil,
-	})
-}
-
 // Create a new Sql transaction.
 // If any error or panic occurs inside, the transaction is automatically rollback
 //
@@ -87,7 +88,8 @@ func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e er
 
 	client := newClient(&DBContext{
 		db:       db.ctx.db,
-		tx:       tx,
+		tx:       tx,{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
+		logger:	  db.ctx.logger,{{ end }}
 	})
 	if err = transaction(client); err != nil {
 		return errors.Join(err, tx.Rollback(context.Background()))
@@ -134,24 +136,6 @@ func QueryOne[T any](ctx *DBContext, sql string, args ...interface{}) (*T, error
 	}
 	defer rows.Close()
 	return pgx.CollectOneRow(rows, pgx.RowToAddrOfStructByName[T])
-}
-
-// Execute a Custom SQL query and get many rows result.
-//
-// Usage:
-//   rows, err := db.QueryRows(ctx, &res, sql, args...)
-func QueryRows[T any](ctx *DBContext, sql string, args ...interface{}) ([]T, error) {
-	db := ctx.db
-	if ctx.tx != nil {
-		db = ctx.tx
-	}
-
-	rows, err := db.Query(context.Background(), sql, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	return pgx.CollectRows(rows, pgx.RowToStructByName[T])
 }
 
 // Execute a Custom SQL query and get many rows result.
@@ -204,6 +188,7 @@ func limitFirst(cond SelectBuilder) SelectBuilder {
 
 type DBContext struct {
     db DbPgx
-    tx pgx.Tx
+    tx pgx.Tx{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
+	logger {{ .Logger.Type }}{{ end }}
 }
 

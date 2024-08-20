@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/kefniark/mango-sql/internal"
@@ -17,27 +18,38 @@ import (
 
 func main() {
 	app := &cli.App{
+		Version:  "v0.0.1",
 		Name:     "mangosql",
 		HelpName: "MangoSQL",
 		Usage:    "Generate a SQL Client from a SQL file or folder of SQL migrations",
 		UsageText: `Syntax: mangosql [options] <source folder>
 Example: mangosql --output db/file.go db/schema.sql`,
-		Suggest: true,
+		Suggest:              true,
+		EnableBashCompletion: true,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:  "output",
-				Value: "database/client.go",
-				Usage: "Output file",
+				Name:    "output",
+				Aliases: []string{"o"},
+				Value:   "database/client.go",
+				Usage:   "Output file",
 			},
 			&cli.StringFlag{
-				Name:  "package",
-				Value: "database",
-				Usage: "Go Package",
+				Name:    "package",
+				Aliases: []string{"p"},
+				Value:   "database",
+				Usage:   "Go Package",
 			},
 			&cli.StringFlag{
-				Name:  "driver",
-				Value: "pgx",
-				Usage: "SQL Driver",
+				Name:    "driver",
+				Aliases: []string{"d"},
+				Value:   "pgx",
+				Usage:   "SQL Driver",
+			},
+			&cli.StringFlag{
+				Name:    "logger",
+				Aliases: []string{"l"},
+				Value:   "none",
+				Usage:   "Logging library",
 			},
 		},
 		Action: func(ctx *cli.Context) error {
@@ -45,12 +57,25 @@ Example: mangosql --output db/file.go db/schema.sql`,
 				return fmt.Errorf("missing source folder")
 			}
 
+			allowed_drivers := []string{"pq", "pgx", "sqlite"}
+			driver := ctx.String("driver")
+			if !slices.Contains(allowed_drivers, driver) {
+				return fmt.Errorf("unknown driver, should be one of %v", allowed_drivers)
+			}
+
+			allowed_logger := []string{"none", "zap", "logrus", "zerolog", "console"}
+			logger := ctx.String("logger")
+			if !slices.Contains(allowed_logger, logger) {
+				return fmt.Errorf("unknown logger, should be one of %v", allowed_logger)
+			}
+
 			name := ctx.Args().Get(0)
 			return generate(GenerateOptions{
 				Src:     name,
 				Output:  ctx.String("output"),
 				Package: ctx.String("package"),
-				Driver:  ctx.String("driver"),
+				Driver:  driver,
+				Logger:  logger,
 			})
 		},
 	}
@@ -65,6 +90,7 @@ type GenerateOptions struct {
 	Output  string
 	Package string
 	Driver  string
+	Logger  string
 }
 
 func generate(opts GenerateOptions) error {
@@ -110,7 +136,7 @@ func generate(opts GenerateOptions) error {
 	var b bytes.Buffer
 	contents := bufio.NewWriter(&b)
 
-	if err = internal.Generate(schema, contents, opts.Package, opts.Driver); err != nil {
+	if err = internal.Generate(schema, contents, opts.Package, opts.Driver, opts.Logger); err != nil {
 		return err
 	}
 
