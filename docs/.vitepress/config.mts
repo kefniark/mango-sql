@@ -36,6 +36,7 @@ export default defineConfig({
           { text: 'Soft Delete', link: '/features/soft-delete' },
           { text: 'Logging', link: '/features/logging' },
           // { text: 'Migrations', link: '/api/mutations' },
+          { text: 'Benchmark', link: '/bench/bench' },
         ]
       },
       // {

@@ -7,6 +7,9 @@ format:
 lint:
     golangci-lint run ./...
 
+docs:
+    npm run docs:dev
+
 generate:
     # tests
     go run ./cmd/mangosql/ --output ./tests/postgres/auto-increment/client.go --package autoincrement --logger console ./tests/postgres/auto-increment/schema.sql
@@ -33,7 +36,7 @@ generate:
 
 bench:
     CGO_ENABLED=0 go test -bench=. -benchmem ./tests/bench | tee bench.log
-    # go run ./cmd/bench/
+    go run ./cmd/bench/
 
 test: generate
     go test -race --cover --coverprofile=coverage.txt ./...

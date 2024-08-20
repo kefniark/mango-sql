@@ -8,12 +8,12 @@ MangoSQL is a fresh and juicy SQL code generator.
 2. You run MangoSQL cli to generate a client with type-safe interfaces and queries
 3. You write application code that calls the generated code
 
-This is not an ORM, and you can easily inspect the code generated.
-This is inspired by [SQLC](https://github.com/sqlc-dev/sqlc) but pushes the idea farther by supporting batching, relations and dynamic queries.
+The perfect choice if you don't want an ORM, but don't want to write all your application queries by hand either.
+This is inspired by [SQLC](https://github.com/sqlc-dev/sqlc), but pushes the idea farther by supporting batching, relations and dynamic queries.
 
 ## Features
 
-* **Convenient**: All the structs are generated for you, No need for manual DTO/PDO
+* **Convenient**: All the structs are generated for you, No need to write manually DTO/PDO
 * **Time Saver**: All the basic queries (CRUD) are generated from your schema alone, less queries to write
 * **Developer Friendly**: The code generated contains comments, examples and is designed with IDE autocompletion in mind 
 * **Flexible**: Provide a way to run dynamic queries (pagination, search, ...)
