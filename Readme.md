@@ -1,10 +1,8 @@
-# MangoSQL
+# MangoSQL 🥭
 
 ![GitHub License](https://img.shields.io/github/license/kefniark/mango-sql)
 ![GitHub Release](https://img.shields.io/github/v/release/kefniark/mango-sql)
 ![GitHub Release Date](https://img.shields.io/github/release-date/kefniark/mango-sql)
-
-
 
 ## Description
 
