@@ -34,3 +34,7 @@ test: generate
     go tool cover -html=coverage.txt -o coverage.html
     gocover-cobertura < coverage.txt > coverage.xml
 
+update:
+    devenv update
+    go get -u ./...
+    go mod tidy
