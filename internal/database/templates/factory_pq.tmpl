@@ -66,7 +66,7 @@ func (f {{ .Model }}[T]) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCon
 //   })
 func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e error) {
 	if db.ctx.tx != nil {
-		return fmt.Errorf("nested transaction is not supported")
+		return errors.New("nested transaction is not supported")
 	}
 
 	tx, err := db.ctx.db.Beginx()
@@ -179,7 +179,7 @@ func first[T any](items []T, err error) (*T, error) {
 	}
 
 	if len(items) == 0 {
-		return nil, fmt.Errorf("not found")
+		return nil, errors.New("first element not found")
 	}
 
 	return &items[0], nil

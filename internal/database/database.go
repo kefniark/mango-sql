@@ -158,6 +158,7 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		return err
 	}
 
+	_, ok := deps["uuid.UUID"]
 	if err = factoryTmpl.Execute(contents, struct {
 		Tables  []*PostgresTable
 		Queries []*PostgresQuery
@@ -188,11 +189,13 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		}
 
 		if err = queriesTmpl.Execute(contents, struct {
-			Table  *PostgresTable
-			Logger LoggerConfig
+			Table   *PostgresTable
+			Logger  LoggerConfig
+			HasUUID bool
 		}{
-			Table:  table,
-			Logger: logConfig,
+			Table:   table,
+			Logger:  logConfig,
+			HasUUID: ok,
 		}); err != nil {
 			return err
 		}

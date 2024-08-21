@@ -14,7 +14,7 @@ type DBClient struct {
 }
 
 // Create a new instance of MangoSql
-func New(db DbPgx {{ if and .Logger.HasLogger .Logger.HasLoggerParam }}, logger {{ .Logger.Type }}{{ end }}) *DBClient {
+func New(db DBPgx {{ if and .Logger.HasLogger .Logger.HasLoggerParam }}, logger {{ .Logger.Type }}{{ end }}) *DBClient {
     return newClient(&DBContext{
 		db:       db,
 		tx:       nil,{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
@@ -56,7 +56,7 @@ func (f {{ .Model }}[T]) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCon
 
 {{ end }}{{ end }}
 
-type DbPgx interface {
+type DBPgx interface {
 	Begin(ctx context.Context) (pgx.Tx, error)
 	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
 	Query(ctx context.Context, sql string, args ...any) (pgx.Rows, error)
@@ -72,7 +72,7 @@ type DbPgx interface {
 //   })
 func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e error) {
 	if db.ctx.tx != nil {
-		return fmt.Errorf("nested transaction is not supported")
+		return errors.New("nested transaction is not supported")
 	}
 
 	tx, err := db.ctx.db.Begin(context.Background())
@@ -176,7 +176,7 @@ func first[T any](items []T, err error) (*T, error) {
 	}
 
 	if len(items) == 0 {
-		return nil, fmt.Errorf("not found")
+		return nil, errors.New("first element not found")
 	}
 
 	return &items[0], nil
@@ -187,7 +187,7 @@ func limitFirst(cond SelectBuilder) SelectBuilder {
 }
 
 type DBContext struct {
-    db DbPgx
+    db DBPgx
     tx pgx.Tx{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
 	logger {{ .Logger.Type }}{{ end }}
 }

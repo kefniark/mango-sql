@@ -28,14 +28,16 @@ func (q *{{ .Table.NameNormalized }}Queries) InsertMany(inputs []{{ .Table.NameN
 	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
 		records := make([]{{ .Table.NameNormalized }}Update, len(chunk))
-		for i, input := range chunk {
+		{{ if $.HasUUID }}uuid.EnableRandPool()
+		{{ end }}for i, input := range chunk {
 			records[i] = {{ if and (not .Table.HasCompositeId) (not .Table.HasStructCopy) }}{{ .Table.NameNormalized }}Update{
 				{{ range .Table.GetPrimaryKeyConstructors }}          {{ .Name }}: {{ .Init }},
         		{{ end }}{{ range .Table.ColumnsCreate }}          {{ .NameNormalized }}: input.{{ .NameNormalized }},
 				{{ end }}
 			}{{ else }}{{ .Table.NameNormalized }}Update(input){{ end }}
 		}
-
+		{{ if $.HasUUID }}uuid.DisableRandPool()
+		{{ end }}
 		data, err := json.Marshal(records)
 		if err != nil {
 			return nil, err

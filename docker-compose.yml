@@ -1,7 +1,7 @@
 version: "3.6"
 services:
   pgtestdb:
-    image: postgres:15
+    image: postgres:16
     environment:
       POSTGRES_PASSWORD: password
     restart: unless-stopped
@@ -14,8 +14,8 @@ services:
       - "postgres"
       - "-c" # turn off fsync for speed
       - "fsync=off"
-      - "-c" # log everything for debugging
-      - "log_statement=all"
+      # - "-c" # log everything for debugging
+      # - "log_statement=all"
     ports:
       # Entirely up to you what port you want to use while testing.
       - "5433:5432"

@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	driver_sqlite "github.com/kefniark/mango-sql/tests/bench/sqlite"
 	"github.com/stretchr/testify/assert"
@@ -39,9 +38,12 @@ func BenchmarkMangoSQLite(t *testing.B) {
 	dbMangoSqlite, closeSqlite := newBenchmarkDBSQLite(t)
 	defer closeSqlite()
 
+	id := int64(0)
+
 	t.Run("InsertOne", func(t *testing.B) {
 		for i := 0; i < t.N; i++ {
-			_, err := dbMangoSqlite.User.Insert(driver_sqlite.UserCreate{Id: uuid.NewString(), Name: "John Doe", Email: "john@email.com"})
+			id++
+			_, err := dbMangoSqlite.User.Insert(driver_sqlite.UserCreate{Id: id, Name: "John Doe", Email: "john@email.com"})
 			assert.NoError(t, err)
 		}
 	})
@@ -51,7 +53,8 @@ func BenchmarkMangoSQLite(t *testing.B) {
 			for i := 0; i < t.N; i++ {
 				create := make([]driver_sqlite.UserCreate, value)
 				for i := 0; i < len(create); i++ {
-					create[i] = driver_sqlite.UserCreate{Id: uuid.NewString(), Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
+					id++
+					create[i] = driver_sqlite.UserCreate{Id: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 				}
 
 				_, err := dbMangoSqlite.User.InsertMany(create)
@@ -63,7 +66,8 @@ func BenchmarkMangoSQLite(t *testing.B) {
 	t.Run("FindById", func(t *testing.B) {
 		create := make([]driver_sqlite.UserCreate, 10)
 		for i := 0; i < len(create); i++ {
-			create[i] = driver_sqlite.UserCreate{Id: uuid.NewString(), Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
+			id++
+			create[i] = driver_sqlite.UserCreate{Id: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 		}
 
 		users, err := dbMangoSqlite.User.InsertMany(create)
@@ -82,9 +86,9 @@ func BenchmarkMangoSQLite(t *testing.B) {
 	for _, value := range samples {
 		t.Run("FindMany_"+fmt.Sprint(value), func(t *testing.B) {
 			create := make([]driver_sqlite.UserCreate, value)
-			ids := []string{}
+			ids := []int64{}
 			for i := 0; i < len(create); i++ {
-				id := uuid.NewString()
+				id++
 				ids = append(ids, id)
 				create[i] = driver_sqlite.UserCreate{Id: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 			}

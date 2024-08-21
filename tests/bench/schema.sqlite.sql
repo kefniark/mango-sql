@@ -1,5 +1,5 @@
 CREATE TABLE users (
-  id          string PRIMARY KEY,
+  id          integer PRIMARY KEY,
   email       VARCHAR(64) NOT NULL,
   name        VARCHAR(64) NOT NULL,
   created_at  TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,

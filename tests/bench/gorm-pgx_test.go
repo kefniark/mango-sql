@@ -17,12 +17,17 @@ import (
 
 type User struct {
 	gorm.Model
-	Id        uuid.UUID  `json:"id" db:"id" `
+	Id        uuid.UUID  `json:"id" db:"id"`
 	Email     string     `json:"email" db:"email"`
 	Name      string     `json:"name" db:"name"`
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt time.Time  `json:"updated_at" db:"updated_at"`
 	DeletedAt *time.Time `json:"deleted_at" db:"deleted_at"`
+}
+
+func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
+	user.Id = uuid.New()
+	return
 }
 
 func newBenchmarkDBGorm(t *testing.B) (*gorm.DB, func()) {
@@ -52,7 +57,7 @@ func BenchmarkGormPostgresPGX(t *testing.B) {
 
 	t.Run("InsertOne", func(t *testing.B) {
 		for i := 0; i < t.N; i++ {
-			tx := dbGormPgx.Create(&User{Id: uuid.New(), Name: "John Doe", Email: "john@email.com"})
+			tx := dbGormPgx.Create(&User{Name: "John Doe", Email: "john@email.com"})
 			assert.NoError(t, tx.Error)
 		}
 	})
@@ -62,7 +67,7 @@ func BenchmarkGormPostgresPGX(t *testing.B) {
 			for i := 0; i < t.N; i++ {
 				create := make([]User, value)
 				for i := 0; i < len(create); i++ {
-					create[i] = User{Id: uuid.New(), Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
+					create[i] = User{Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 				}
 
 				tx := dbGormPgx.Create(&create)
@@ -74,7 +79,7 @@ func BenchmarkGormPostgresPGX(t *testing.B) {
 	t.Run("FindById", func(t *testing.B) {
 		create := make([]User, 10)
 		for i := 0; i < len(create); i++ {
-			create[i] = User{Id: uuid.New(), Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
+			create[i] = User{Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 		}
 
 		tx := dbGormPgx.Create(&create)
@@ -97,7 +102,7 @@ func BenchmarkGormPostgresPGX(t *testing.B) {
 			create := make([]User, value)
 			ids := []uuid.UUID{}
 			for i := 0; i < len(create); i++ {
-				user := &User{Id: uuid.New(), Name: "John Doe", Email: "john@email.com"}
+				user := &User{Name: "John Doe", Email: "john@email.com"}
 				tx := dbGormPgx.Create(user)
 				assert.NoError(t, tx.Error)
 				ids = append(ids, user.Id)
