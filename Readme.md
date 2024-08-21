@@ -6,11 +6,11 @@
 
 ## Description
 
-**MangoSQL** is a fresh and juicy SQL code generator.
+**MangoSQL** is a fresh and juicy SQL code generator for **Golang**.
 
-1. You provide your database schema (.sql files)
-2. You run MangoSQL cli to generate a client with type-safe interfaces and queries
-3. You write application code that calls the generated code
+1. Provide your database schema (.sql files)
+2. Run MangoSQL cli to generate a client with type-safe interfaces and queries
+3. Write application code based on this generated db client
 
 **MangoSQL** is the perfect choice if you don't want an heavy ORM, but don't want to write all the SQL queries by hand like a caveman either.
 Originally inspired by [SQLC](https://github.com/sqlc-dev/sqlc), but pushes the idea farther by natively supporting batching, relations and dynamic queries.
