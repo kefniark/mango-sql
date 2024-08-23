@@ -1,9 +1,10 @@
+name: Test
+
 on:
   push:
     branches: [master]
   pull_request:
 
-name: Test
 jobs:
   test:
     runs-on: ubuntu-latest
