@@ -1,12 +1,14 @@
 { pkgs, lib, config, inputs, ... }:
 
-{
+let
+  pkgs-unstable = import inputs.nixpkgs-unstable { system = pkgs.stdenv.system; };
+in {
   # https://devenv.sh/packages/
   packages = [
     pkgs.git
     
     # Golang
-    pkgs.go_1_22
+    pkgs-unstable.go_1_23
     pkgs.gotools
     pkgs.golangci-lint
     pkgs.gocover-cobertura
@@ -17,6 +19,8 @@
     # CLI Tools
     pkgs.goose
     pkgs.just
+    pkgs.ko
+    pkgs.upx
   ];
 
   # https://devenv.sh/tests/

@@ -239,7 +239,11 @@ func findTableDeps(schema *core.SQLSchema, table *tree.SelectClause, macro []cor
 
 	selectInput := []string{}
 	for _, sel := range query.SelectFields {
-		selectInput = append(selectInput, fmt.Sprintf("%s AS %s", sel.Name, sel.As))
+		if sel.As != "" {
+			selectInput = append(selectInput, fmt.Sprintf("%s AS %s", sel.Name, sel.As))
+		} else {
+			selectInput = append(selectInput, sel.Name)
+		}
 	}
 	query.Select = strings.Join(selectInput, ", ")
 
@@ -352,7 +356,7 @@ func resolveTableColumns(field string, as string, tables []core.TableDeps, schem
 			Ref:      strcase.ToCamel(cleanupName),
 			Type:     fieldType,
 			TypeSql:  fieldSqlType,
-			Nullable: false,
+			Nullable: true,
 			Order:    i * 1000000,
 		})
 	}

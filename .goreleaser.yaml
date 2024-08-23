@@ -14,7 +14,7 @@ before:
     - go mod tidy
 
 builds:
-  - main: cmd/mangosql/mangosql.go
+  - main: ./cmd/mangosql
     env:
       - CGO_ENABLED=0
     goos:
@@ -24,6 +24,25 @@ builds:
     goarch:
       - amd64
       - arm64
+
+upx:
+  - enabled: true
+
+kos:
+  - id: mango-sql
+    main: ./cmd/mangosql
+    repository: ghcr.io/kefniark/mango-sql
+    sbom: none
+
+    platforms:
+      - linux/amd64
+      - linux/arm64
+
+    tags:
+      - "{{.Version}}"
+      - latest]
+
+report_sizes: true
 
 archives:
   - format: tar.gz
@@ -41,8 +60,4 @@ archives:
         format: zip
 
 changelog:
-  sort: asc
-  filters:
-    exclude:
-      - "^docs:"
-      - "^test:"
+  use: github
