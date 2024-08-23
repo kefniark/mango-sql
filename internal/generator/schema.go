@@ -1,4 +1,4 @@
-package database
+package generator
 
 import "github.com/kefniark/mango-sql/internal/core"
 
