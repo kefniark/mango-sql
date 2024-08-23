@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version (semver: x.y.z)'
+        description: 'Version (eg. v0.2.1)'
         required: true
 
 jobs:
@@ -16,3 +16,4 @@ jobs:
         id: "tag_create"
         with:
           tag: ${{ github.event.inputs.version }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
