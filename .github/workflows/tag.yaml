@@ -7,6 +7,9 @@ on:
         description: 'Version (eg. v0.2.1)'
         required: true
 
+permissions:
+  contents: write
+  
 jobs:
   tag:
     runs-on: ubuntu-latest
