@@ -23,5 +23,5 @@ jobs:
           git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
           
           # Create a tag and push it
-          git tag "${{ github.event.inputs.version }}"
-          git push origin "${{ github.event.inputs.version }}"
+          git tag ${{ github.event.inputs.version }}
+          git push origin ${{ github.event.inputs.version }}

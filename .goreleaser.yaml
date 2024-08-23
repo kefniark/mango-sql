@@ -39,8 +39,9 @@ kos:
       - linux/arm64
 
     tags:
-      - "{{.Version}}"
-      - latest]
+      - latest
+      - "{{.Tag}}"
+      - "{{if not .Prerelease}}stable{{end}}"
 
 report_sizes: true
 
