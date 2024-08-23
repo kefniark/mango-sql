@@ -15,4 +15,4 @@ jobs:
       - uses: rickstaa/action-create-tag@v1
         id: "tag_create"
         with:
-          tag: ${{ github.event.inputs.message }}
+          tag: ${{ github.event.inputs.version }}
