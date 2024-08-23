@@ -33,6 +33,8 @@ kos:
     main: ./cmd/mangosql
     repository: ghcr.io/kefniark/mango-sql
     sbom: none
+    bare: true
+    preserve_import_paths: false
 
     platforms:
       - linux/amd64
