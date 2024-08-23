@@ -28,6 +28,7 @@ jobs:
       - name: Use devenv shell
         shell: devenv shell bash -- -e {0}
         run: |
+          just generate
           go mod tidy
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
