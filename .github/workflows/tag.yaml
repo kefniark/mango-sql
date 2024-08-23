@@ -9,14 +9,19 @@ on:
 
 permissions:
   contents: write
-  
+
 jobs:
   tag:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: rickstaa/action-create-tag@v1
-        id: "tag_create"
         with:
-          tag: ${{ github.event.inputs.version }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+      - run: |
+          # Configure git
+          git config user.name "${GITHUB_ACTOR}"
+          git config user.email "${GITHUB_ACTOR}@users.noreply.github.com"
+          
+          # Create a tag and push it
+          git tag "${{ github.event.inputs.version }}"
+          git push origin "${{ github.event.inputs.version }}"
