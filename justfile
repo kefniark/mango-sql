@@ -10,7 +10,10 @@ lint:
 docs:
     npm run docs:dev
 
-generate:
+generate-internal:
+    go run ./cmd/mangosql/ --output ./internal/database/postgres/client.go --logger console ./internal/database/postgres/
+
+generate:    
     # tests
     go run ./cmd/mangosql/ --output ./tests/postgres/auto-increment/client.go --package autoincrement --logger console ./tests/postgres/auto-increment/schema.sql
     go run ./cmd/mangosql/ --output ./tests/postgres/composite/client.go --package composite --logger console ./tests/postgres/composite/schema.sql
