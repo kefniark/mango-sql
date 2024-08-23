@@ -9,9 +9,9 @@ in {
     
     # Golang
     pkgs-unstable.go_1_23
-    pkgs.gotools
-    pkgs.golangci-lint
-    pkgs.gocover-cobertura
+    pkgs-unstable.gotools
+    pkgs-unstable.golangci-lint
+    pkgs-unstable.gocover-cobertura
 
     # NodeJS (docs)
     pkgs.nodejs_20

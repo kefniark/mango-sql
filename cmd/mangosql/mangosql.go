@@ -33,6 +33,11 @@ Example: mangosql --output db/file.go db/schema.sql`,
 				Value:   "database/client.go",
 				Usage:   "Output file",
 			},
+			&cli.BoolFlag{
+				Name:    "inline",
+				Aliases: []string{"i"},
+				Usage:   "Output to console",
+			},
 			&cli.StringFlag{
 				Name:    "package",
 				Aliases: []string{"p"},
@@ -73,6 +78,7 @@ Example: mangosql --output db/file.go db/schema.sql`,
 			return generate(GenerateOptions{
 				Src:     name,
 				Output:  ctx.String("output"),
+				Inline:  ctx.Bool("inline"),
 				Package: ctx.String("package"),
 				Driver:  driver,
 				Logger:  logger,
@@ -88,6 +94,7 @@ Example: mangosql --output db/file.go db/schema.sql`,
 type GenerateOptions struct {
 	Src     string
 	Output  string
+	Inline  bool
 	Package string
 	Driver  string
 	Logger  string
@@ -153,19 +160,23 @@ func generate(opts GenerateOptions) error {
 		return err
 	}
 
+	contents.Flush()
+	formatted, err := format.Source([]byte((b.String())))
+	if err != nil {
+		return err
+	}
+
+	if opts.Inline {
+		fmt.Println(string(formatted))
+		return nil
+	}
+
 	f, err := os.Create(path.Join(folder, file))
 	if err != nil {
 		return err
 	}
 
 	defer f.Close()
-
-	contents.Flush()
-
-	formatted, err := format.Source([]byte((b.String())))
-	if err != nil {
-		return err
-	}
 
 	_, err = f.WriteString(string(formatted))
 	fmt.Printf("Generated %s\n", path.Join(folder, file))
