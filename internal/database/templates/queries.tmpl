@@ -273,14 +273,5 @@ func (q *{{ .Name }}Queries) {{ .Method }}(id {{ .Name }}PrimaryKey) (*{{ .Name 
 		{{ else }}return cond{{ range .Fields }}.Where("{{ .Name }} = ?", id){{ end }}{{ end }}
 	})
 }
+{{ end }}
 
-{{ if not $.Table.HasCompositeId }}// Batch Find {{ .Name }} By PrimaryKey
-//
-// Usage:
-//   entities, err := db.{{ .Name }}.{{ .Method }}s(ids)
-func (q *{{ .Name }}Queries) {{ .Method }}s(ids ...{{ .Name }}PrimaryKey) ([]{{ .Name }}Model, error) {
-	return q.FindMany(func(cond SelectBuilder) SelectBuilder {
-		return cond{{ range .Fields }}.Where("{{ .Name }} = ANY(?)", pq.Array(ids)){{ end }}
-	})
-}
-{{ end }}{{ end }}

@@ -6,14 +6,14 @@ package {{ .Package }}
  */
 
 import (
-    "database/sql"
+"database/sql"
+	"database/sql"
 	"encoding/json"
-    "fmt"
 	"errors"
+	"fmt"
 
-    "github.com/lib/pq"
-    squirrel "github.com/Masterminds/squirrel"
-    "github.com/jmoiron/sqlx"
+	squirrel "github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 {{ range .Deps }}   "{{ . }}"
 {{ end }}
 )

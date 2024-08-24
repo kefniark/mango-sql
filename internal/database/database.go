@@ -32,12 +32,17 @@ var customTypes = []FieldInitializer{
 }
 
 func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver string, logger string) error {
+	deps := map[string]string{}
 	templateType := ""
 	switch driver {
 	case "pgx":
 		templateType = "pgx"
 	default:
 		templateType = "pq"
+	}
+
+	if driver == "pq" {
+		deps["pq"] = "github.com/lib/pq"
 	}
 
 	headerTmpl, err := template.ParseFS(templates, fmt.Sprintf("templates/header_%s.tmpl", templateType))
@@ -89,7 +94,6 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		postgresQueries = append(postgresQueries, entry)
 	}
 
-	deps := map[string]string{}
 	for _, t := range postgresTables {
 		for _, c := range t.Columns {
 			for _, custom := range customTypes {

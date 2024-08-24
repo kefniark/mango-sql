@@ -41,7 +41,8 @@ bench:
     go run ./cmd/bench/
 
 test: generate
-    go test -race --cover --coverprofile=coverage.txt ./...
+    go test -race ./...
+    go test --cover --coverprofile=coverage.txt ./tests/queries/...
     go tool cover -html=coverage.txt -o coverage.html
     gocover-cobertura < coverage.txt > coverage.xml
 
