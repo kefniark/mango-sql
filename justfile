@@ -24,6 +24,8 @@ generate:
     # test queries
     go run ./cmd/mangosql/ --output ./tests/queries/pq/client.go --package pq --driver pq --logger console ./tests/queries/sqlited/schema.sql
     go run ./cmd/mangosql/ --output ./tests/queries/pgx/client.go --package pgx --logger console ./tests/queries/sqlited/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/queries/mysql/client.go --package mysql --driver mysql --logger console ./tests/queries/mysql/schema.sql
+    go run ./cmd/mangosql/ --output ./tests/queries/mariadb/client.go --package mariadb --driver mariadb --logger console ./tests/queries/mariadb/schema.sql
     go run ./cmd/mangosql/ --output ./tests/queries/sqlited/client.go --package sqlited --driver sqlite --logger console ./tests/queries/sqlited/schema.sql
 
     # bench
@@ -39,7 +41,8 @@ bench:
     go run ./cmd/bench/
 
 test: generate
-    go test -race --cover --coverprofile=coverage.txt ./...
+    go test -race ./...
+    go test --cover --coverprofile=coverage.txt ./tests/queries/...
     go tool cover -html=coverage.txt -o coverage.html
     gocover-cobertura < coverage.txt > coverage.xml
 

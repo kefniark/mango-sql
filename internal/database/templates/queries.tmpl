@@ -10,7 +10,13 @@ func (q *{{ .Table.NameNormalized }}Queries) Insert(input {{ .Table.NameNormaliz
 	defer func() {
 		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Insert", requestErr, time.Since(start), sql, input)
 	}(){{ end }}
-	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .Table.ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
+{{ if .Table.HasInsertReturning }}	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .Table.ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
+{{ else }}	_, err := Exec(q.ctx, sql, {{ range .Table.GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .Table.ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
+	if err != nil {
+		return nil, err
+	}
+	return q.FindById({{ range .Table.ColumnIds }}input.{{ .NameNormalized }},{{ end }}){{ end }}
+	// return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .Table.ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
 }
 
 // Batch Insert {{ .Table.NameNormalized }}
@@ -65,7 +71,12 @@ func (q *{{ .Table.NameNormalized }}Queries) Upsert(input {{ .Table.NameNormaliz
 	defer func() {
 		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Upsert", requestErr, time.Since(start), sql, input)
 	}(){{ end }}
-	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }});
+{{ if .Table.HasUpdateReturning }}	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetInsertSqlColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
+{{ else }}	_, err := Exec(q.ctx, sql, {{ range .Table.GetInsertSqlColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
+	if err != nil {
+		return nil, err
+	}
+	return q.FindById({{ range .Table.ColumnIds }}input.{{ .NameNormalized }},{{ end }}){{ end }}
 }
 
 // Batch Upsert {{ .Table.NameNormalized }} (create or update if already exist)
@@ -109,7 +120,12 @@ func (q *{{ .Table.NameNormalized }}Queries) Update(input {{ .Table.NameNormaliz
 	defer func() {
 		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Update", requestErr, time.Since(start), sql, input)
 	}(){{ end }}
-	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.ColumnsUpdate }}input.{{ .NameNormalized }}, {{ end }})
+{{ if .Table.HasUpdateReturning }}	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetUpdateSqlColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
+{{ else }}	_, err := Exec(q.ctx, sql, {{ range .Table.GetUpdateSqlColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
+	if err != nil {
+		return nil, err
+	}
+	return q.FindById({{ range .Table.ColumnIds }}input.{{ .NameNormalized }},{{ end }}){{ end }}
 }
 
 // Batch Update {{ .Table.NameNormalized }}
@@ -151,7 +167,8 @@ func (q *{{ .Table.NameNormalized }}Queries) DeleteSoft(id {{ .Table.NameNormali
 	defer func() {
 		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.DeleteSoft", requestErr, time.Since(start), sql, id)
 	}(){{ end }}
-	return Exec(q.ctx, sql, id)
+	_, err := Exec(q.ctx, sql, id)
+	return err
 }
 
 // Delete a {{ .Table.NameNormalized }} (soft delete, data are still in the database)
@@ -172,7 +189,8 @@ func (q *{{ .Table.NameNormalized }}Queries) DeleteHard(id {{ .Table.NameNormali
 	defer func() {
 		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.DeleteHard", requestErr, time.Since(start), sql, id)
 	}(){{ end }}
-	return Exec(q.ctx, sql, id)
+	_, err := Exec(q.ctx, sql, id)
+	return err
 }
 
 // Delete a {{ .Table.NameNormalized }} (hard delete, data are removed from the database)
@@ -252,17 +270,8 @@ func (q *{{ .Table.NameNormalized }}Queries) FindUnique(filters ...WhereConditio
 func (q *{{ .Name }}Queries) {{ .Method }}(id {{ .Name }}PrimaryKey) (*{{ .Name }}Model, error) {
 	return q.FindUnique(func(cond SelectBuilder) SelectBuilder {
 		{{ if $.Table.HasCompositeId }}return cond{{ range $i, $f := .Fields }}.Where("{{ $f.Name }} = ${{ len (printf "a%*s" $i "") }}", id.{{ $f.NameNormalized }}){{ end }}
-		{{ else }}return cond{{ range .Fields }}.Where("{{ .Name }} = $1", id){{ end }}{{ end }}
+		{{ else }}return cond{{ range .Fields }}.Where("{{ .Name }} = ?", id){{ end }}{{ end }}
 	})
 }
+{{ end }}
 
-{{ if not $.Table.HasCompositeId }}// Batch Find {{ .Name }} By PrimaryKey
-//
-// Usage:
-//   entities, err := db.{{ .Name }}.{{ .Method }}s(ids)
-func (q *{{ .Name }}Queries) {{ .Method }}s(ids ...{{ .Name }}PrimaryKey) ([]{{ .Name }}Model, error) {
-	return q.FindMany(func(cond SelectBuilder) SelectBuilder {
-		return cond{{ range .Fields }}.Where("{{ .Name }} = ANY($1)", pq.Array(ids)){{ end }}
-	})
-}
-{{ end }}{{ end }}

@@ -4,9 +4,9 @@ import { withBase } from 'vitepress'
 
 # Benchmark
 
-The following benchmarks are just here to help development and give a general performance idea of MangoSQL.
+The benchmarks provided are meant to help development and offer a general sense of MangoSQL's performance. They are not intended to be exhaustive or compare every available method or library.
 
-It's not intended to cover every method or library on the market.
+MangoSQL’s speed is not a primary objective, it's rather a byproduct of its design. By eliminating abstraction, reducing indirection, and directly interfacing with drivers, the system minimizes overhead.
 
 ## Postgres 
 

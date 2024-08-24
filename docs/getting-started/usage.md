@@ -55,6 +55,31 @@ func NewDBClient() (db *DBClient, close func()) {
 }
 ```
 
+```go [mariadb/mysql]
+import (
+    "context"
+
+    "github.com/jmoiron/sqlx"
+    _ "github.com/go-sql-driver/mysql"
+)
+
+// TODO: Update mysql/mariadb connection url
+// Ref: https://github.com/go-sql-driver/mysql
+// example: user:password@tcp(127.0.0.1:3306)/dbname?parseTime=true
+const databaseURL := "{CONNECTION URL TO YOUR DATABASE}"
+
+func NewDBClient() (db *DBClient, close func()) {
+    db, err := sqlx.Open("mysql", databaseURL)
+	if err != nil {
+		panic(err)
+	}
+
+    return New(db), func() {
+		db.Close()
+	}
+}
+```
+
 :::
 
 ## Enjoy MangoSQL

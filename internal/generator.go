@@ -10,7 +10,7 @@ import (
 
 func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver string, logger string) error {
 	switch driver {
-	case "sqlite", "pq", "pgx":
+	case "sqlite", "pq", "pgx", "mysql", "mariadb":
 		return database.Generate(schema, contents, pkg, driver, logger)
 	}
 

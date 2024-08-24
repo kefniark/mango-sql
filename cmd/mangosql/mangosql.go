@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"log"
 	"os"
 	"path"
 	"regexp"
@@ -16,9 +15,15 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
+var (
+	version = "dev"
+	commit  = "none"
+	date    = "unknown"
+)
+
 func main() {
 	app := &cli.App{
-		Version:  "v0.0.1",
+		Version:  fmt.Sprintf("%s (%s - %s)", version, commit, date),
 		Name:     "mangosql",
 		HelpName: "MangoSQL",
 		Usage:    "Generate a SQL Client from a SQL file or folder of SQL migrations",
@@ -62,7 +67,7 @@ Example: mangosql --output db/file.go db/schema.sql`,
 				return fmt.Errorf("missing source folder")
 			}
 
-			allowed_drivers := []string{"pq", "pgx", "sqlite"}
+			allowed_drivers := []string{"pq", "pgx", "sqlite", "mysql", "mariadb"}
 			driver := ctx.String("driver")
 			if !slices.Contains(allowed_drivers, driver) {
 				return fmt.Errorf("unknown driver, should be one of %v", allowed_drivers)
@@ -87,7 +92,8 @@ Example: mangosql --output db/file.go db/schema.sql`,
 	}
 
 	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
+		fmt.Println("\033[31mError\033[0m:", err)
+		os.Exit(1)
 	}
 }
 

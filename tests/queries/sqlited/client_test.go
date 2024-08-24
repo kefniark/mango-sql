@@ -491,3 +491,72 @@ func TestModel(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "alice", user3.Name)
 }
+
+func TestFilters(t *testing.T) {
+	db, close := newTestDB(t)
+	defer close()
+	_, err := db.User.Insert(UserCreate{Id: 1, Name: "user1"})
+	assert.NoError(t, err)
+	_, err = db.User.Insert(UserCreate{Id: 2, Name: "user2"})
+	assert.NoError(t, err)
+
+	u, err := db.User.Count(db.User.Query.Id.In(1))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, u)
+
+	u, err = db.User.Count(db.User.Query.Id.NotIn(1))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, u)
+
+	u, err = db.User.Count(db.User.Query.Id.Equal(1))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, u)
+
+	u, err = db.User.Count(db.User.Query.Id.NotEqual(1))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, u)
+
+	u, err = db.User.Count(db.User.Query.Id.IsNull())
+	assert.NoError(t, err)
+	assert.Equal(t, 0, u)
+
+	u, err = db.User.Count(db.User.Query.Id.IsNotNull())
+	assert.NoError(t, err)
+	assert.Equal(t, 2, u)
+
+	u2, err := db.User.FindMany(
+		db.User.Query.Id.IsNotNull(),
+		db.User.Query.Id.OrderAsc(),
+		db.User.Query.Name.OrderDesc(),
+	)
+	assert.NoError(t, err)
+	assert.Equal(t, 2, len(u2))
+
+	u, err = db.User.Count(db.User.Query.Id.GreaterThan(1))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, u)
+
+	u, err = db.User.Count(db.User.Query.Id.GreaterThanOrEqual(1))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, u)
+
+	u, err = db.User.Count(db.User.Query.Id.LesserThan(2))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, u)
+
+	u, err = db.User.Count(db.User.Query.Id.LesserThanOrEqual(2))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, u)
+
+	u, err = db.User.Count(db.User.Query.Id.Between(0, 3))
+	assert.NoError(t, err)
+	assert.Equal(t, 2, u)
+
+	u, err = db.User.Count(db.User.Query.Name.Like("%1"))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, u)
+
+	u, err = db.User.Count(db.User.Query.Name.NotLike("%1"))
+	assert.NoError(t, err)
+	assert.Equal(t, 1, u)
+}

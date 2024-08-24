@@ -67,6 +67,7 @@ type SelectFilter struct {
 	Name    string
 	Pre     string
 	Comment string
+	PreSql  string
 	Sql     string
 	Args    []string
 }
