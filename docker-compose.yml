@@ -1,5 +1,27 @@
 version: "3.6"
 services:
+  mysqltestdb:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: test
+    restart: unless-stopped
+    ports:
+      - "3307:3306"
+
+  mariatestdb:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: user
+      MYSQL_PASSWORD: password
+      MYSQL_DATABASE: test
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+
   pgtestdb:
     image: postgres:16
     environment:

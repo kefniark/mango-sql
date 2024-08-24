@@ -160,14 +160,13 @@ func QueryMany[T any](ctx *DBContext, sql string, args ...interface{}) ([]T, err
 //
 // Usage:
 //   err := db.Exec(ctx, sql, args...)
-func Exec(ctx *DBContext, sql string, args ...interface{}) error {
+func Exec(ctx *DBContext, sql string, args ...interface{}) (pgconn.CommandTag, error) {
 	db := ctx.db
 	if ctx.tx != nil {
 		db = ctx.tx
 	}
 
-	_, err := db.Exec(context.Background(), sql, args...)
-	return err
+	return db.Exec(context.Background(), sql, args...)
 }
 
 func first[T any](items []T, err error) (*T, error) {

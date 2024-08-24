@@ -81,11 +81,36 @@ func GetFilterMethods(tables []*PostgresTable, driver string) []FilterMethod {
 							if err != nil {
 								return f.IsNull()
 							}
-							sql := fmt.Sprintf("%s.%s NOT INT (SELECT value FROM json_each(?))", f.table, f.field)
+							sql := fmt.Sprintf("%s.%s NOT IN (SELECT value FROM json_each(?))", f.table, f.field)
 							`,
 						Comment: `Exclude Records with a field not contains in a set of values`,
 						Sql:     `.Where(sql, jsonArgs)`,
 						Args:    []string{"args ...T"},
+					},
+				)
+			} else if driver == "mysql" || driver == "mariadb" {
+				method.Filters = append(method.Filters,
+					SelectFilter{
+						Model: t,
+						Name:  "In",
+						Pre: `sql := fmt.Sprintf("%s.%s IN(?)", f.table, f.field)
+						`,
+						Comment: `Only include Records with a field contains in a set of values`,
+						PreSql: `query, args, _ := sqlx.In(sql, args)
+						`,
+						Sql:  `.Where(sqlx.Rebind(sqlx.QUESTION, query), args...)`,
+						Args: []string{"args ...T"},
+					},
+					SelectFilter{
+						Model: t,
+						Name:  "NotIn",
+						Pre: `sql := fmt.Sprintf("%s.%s NOT IN(?)", f.table, f.field)
+						`,
+						Comment: `Exclude Records with a field not contains in a set of values`,
+						PreSql: `query, args, _ := sqlx.In(sql, args)
+						`,
+						Sql:  `.Where(sqlx.Rebind(sqlx.QUESTION, query), args...)`,
+						Args: []string{"args ...T"},
 					},
 				)
 			} else {

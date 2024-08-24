@@ -1,36 +1,55 @@
-package pgx
+package mysql
 
 import (
-	"context"
 	"embed"
 	"errors"
 	"fmt"
 	"testing"
+	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/kefniark/mango-sql/tests/helpers"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jmoiron/sqlx"
+	gonanoid "github.com/matoous/go-nanoid/v2"
 	"github.com/stretchr/testify/assert"
 )
 
 //go:embed *.sql
-var sqlPgxFS embed.FS
+var sqlPqFS embed.FS
 
 func newTestDB(t *testing.T) (*DBClient, func()) {
 	t.Helper()
+	id := gonanoid.MustGenerate("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", 8)
+	testDB := "test_" + id
 
-	data, err := sqlPgxFS.ReadFile("schema.sql")
-	if err != nil {
-		panic(err)
-	}
+	dbAdmin, err := sqlx.Connect("mysql", "root:root@tcp(127.0.0.1:3307)/")
+	dbAdmin.SetConnMaxIdleTime(time.Second * 10)
+	assert.NoError(t, err)
 
-	config := helpers.NewDBConfigWith(t, data, "postgres.pgx-queries")
-	db, err := pgx.Connect(context.Background(), config.URL())
-	if err != nil {
-		panic(err)
-	}
+	_, err = dbAdmin.Exec(fmt.Sprintf("CREATE DATABASE %s;", testDB))
+	assert.NoError(t, err)
+
+	_, err = dbAdmin.Exec(fmt.Sprintf("GRANT ALL PRIVILEGES ON %s.* TO 'user'@'%%' WITH GRANT OPTION;", testDB))
+	assert.NoError(t, err)
+
+	_, err = dbAdmin.Exec("FLUSH PRIVILEGES;")
+	assert.NoError(t, err)
+
+	db, err := sqlx.Connect("mysql", fmt.Sprintf("user:password@tcp(127.0.0.1:3307)/%s?parseTime=true&multiStatements=true", testDB))
+	db.SetConnMaxIdleTime(time.Second * 10)
+	assert.NoError(t, err)
+
+	fmt.Println("Create & Use DB", testDB)
+	data, err := sqlPqFS.ReadFile("schema.sql")
+	assert.NoError(t, err)
+
+	_, err = db.Exec(string(data))
+	assert.NoError(t, err)
 
 	return New(db), func() {
-		db.Close(context.Background())
+		dbAdmin.MustExec(fmt.Sprintf("DROP DATABASE %s;", testDB))
+		fmt.Println("Cleanup DB", testDB)
+		dbAdmin.Close()
+		db.Close()
 	}
 }
 
@@ -69,6 +88,7 @@ func testInsert(t *testing.T, db *DBClient) {
 	assert.Equal(t, "tuna", u.Name)
 }
 
+/*
 func TestInsertMany(t *testing.T) {
 	db, close := newTestDB(t)
 	defer close()
@@ -110,6 +130,7 @@ func testInsertMany(t *testing.T, db *DBClient) {
 	assert.Equal(t, "tuna", u[0].Name)
 	assert.Equal(t, "salmon", u[1].Name)
 }
+*/
 
 func TestUpdate(t *testing.T) {
 	db, close := newTestDB(t)
@@ -142,6 +163,7 @@ func testUpdate(t *testing.T, db *DBClient) {
 	assert.Equal(t, "user1-updated", u2.Name)
 }
 
+/*
 func TestUpdateMany(t *testing.T) {
 	db, close := newTestDB(t)
 	defer close()
@@ -179,6 +201,7 @@ func testUpdateMany(t *testing.T, db *DBClient) {
 
 	assert.Equal(t, "user1-updated", user.Name)
 }
+*/
 
 func TestUpsert(t *testing.T) {
 	db, close := newTestDB(t)
@@ -214,6 +237,7 @@ func testUpsert(t *testing.T, db *DBClient) {
 	assert.Equal(t, "user1-updated", user3.Name)
 }
 
+/*
 func TestUpsertMany(t *testing.T) {
 	db, close := newTestDB(t)
 	defer close()
@@ -246,6 +270,7 @@ func testUpsertMany(t *testing.T, db *DBClient) {
 	assert.NoError(t, err)
 	assert.Equal(t, 2, all)
 }
+*/
 
 func TestSoftDelete(t *testing.T) {
 	db, close := newTestDB(t)

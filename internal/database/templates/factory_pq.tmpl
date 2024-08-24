@@ -51,7 +51,7 @@ func newClient(ctx *DBContext) *DBClient {
 {{ range .Filters }}// {{ .Comment }}
 func (f {{ .Model }}[T]) {{ .Name }}({{ range .Args }}{{ . }},{{ end}}) WhereCondition {
 	{{ .Pre }}return func(cond SelectBuilder) SelectBuilder {
-		return cond{{ .Sql }}
+		{{ .PreSql }}return cond{{ .Sql }}
 	}
 }
 
@@ -147,14 +147,13 @@ func QueryMany[T any](ctx *DBContext, sql string, args ...interface{}) ([]T, err
 //
 // Usage:
 //   err := db.Exec(ctx, sql, args...)
-func Exec(ctx *DBContext, sql string, args ...interface{}) error {
+func Exec(ctx *DBContext, sql string, args ...interface{}) (sql.Result, error) {
 	stmt, err := ctx.stmt(sql)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	
-	_, err = stmt.Exec(args...)
-	return err
+	return stmt.Exec(args...)
 }
 
 func (ctx *DBContext) stmt(query string) (*sqlx.Stmt, error) {

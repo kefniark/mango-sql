@@ -111,7 +111,7 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 	ctxConst.Flush()
 
 	placeholder := "squirrel.Dollar"
-	if driver == "sqlite" {
+	if driver == "sqlite" || driver == "mysql" || driver == "mariadb" {
 		placeholder = "squirrel.Question"
 	}
 
@@ -469,6 +469,10 @@ func (table *PostgresTable) GetCreateSqlName() string {
 	return strcase.ToLowerCamel(plural.Singular(table.Name)) + "CreateSql"
 }
 
+func (table *PostgresTable) HasInsertReturning() bool {
+	return table.driver != "mysql"
+}
+
 func (table *PostgresTable) GetCreateSqlContent() string {
 	fields := []string{}
 	keys := []string{}
@@ -485,7 +489,7 @@ func (table *PostgresTable) GetCreateSqlContent() string {
 
 	for id, val := range columns {
 		keys = append(keys, val.Name)
-		values = append(values, fmt.Sprintf("$%d", id+1))
+		values = append(values, param(id+1, table.driver))
 	}
 
 	if table.HasInsertExtraCreated() {
@@ -498,7 +502,11 @@ func (table *PostgresTable) GetCreateSqlContent() string {
 		values = append(values, table.GetNow())
 	}
 
-	return fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s) RETURNING %s`, table.Name, strings.Join(keys, ", "), strings.Join(values, ", "), strings.Join(fields, ", "))
+	if table.driver == "mysql" {
+		return fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s);`, table.Name, strings.Join(keys, ", "), strings.Join(values, ", "))
+	}
+
+	return fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s) RETURNING %s;`, table.Name, strings.Join(keys, ", "), strings.Join(values, ", "), strings.Join(fields, ", "))
 }
 
 func (table *PostgresTable) GetCreateManySqlName() string {
@@ -535,7 +543,7 @@ func (table *PostgresTable) GetCreateManySqlContent() string {
 			values = append(values, table.GetNow())
 		}
 
-		return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM json_each(?) as t RETURNING %s`,
+		return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM json_each(?) as t RETURNING %s;`,
 			table.Name,
 			strings.Join(keys, ", "),
 			strings.Join(values, ", "),
@@ -553,7 +561,7 @@ func (table *PostgresTable) GetCreateManySqlContent() string {
 		values = append(values, table.GetNow())
 	}
 
-	return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM jsonb_to_recordset($1) as t(%s) RETURNING %s`,
+	return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM jsonb_to_recordset($1) as t(%s) RETURNING %s;`,
 		table.Name,
 		strings.Join(keys, ", "),
 		strings.Join(values, ", "),
@@ -581,11 +589,15 @@ func (table *PostgresTable) GetUpsertSqlContent() string {
 		if slices.Contains(table.Primary, val.Name) {
 			ids = append(ids, val.Name)
 		} else {
-			set = append(set, fmt.Sprintf("%s=%s", val.Name, fmt.Sprintf("EXCLUDED.%s", val.Name)))
+			if table.driver == "mysql" || table.driver == "mariadb" {
+				set = append(set, fmt.Sprintf("%s=%s", val.Name, fmt.Sprintf("VALUES(%s)", val.Name)))
+			} else {
+				set = append(set, fmt.Sprintf("%s=%s", val.Name, fmt.Sprintf("EXCLUDED.%s", val.Name)))
+			}
 		}
 
 		keys = append(keys, val.Name)
-		values = append(values, fmt.Sprintf("$%d", id+1))
+		values = append(values, param(id+1, table.driver))
 	}
 
 	if table.HasInsertExtraCreated() {
@@ -602,7 +614,17 @@ func (table *PostgresTable) GetUpsertSqlContent() string {
 		set = append(set, "updated_at="+table.GetNow())
 	}
 
-	return fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s) ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s`,
+	// `INSERT INTO users (id, name) VALUES (?, ?) ON DUPLICATE KEY UPDATE name=VALUES(name);
+	if table.driver == "mysql" || table.driver == "mariadb" {
+		return fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s) ON DUPLICATE KEY UPDATE %s;`,
+			table.Name,
+			strings.Join(keys, ", "),
+			strings.Join(values, ", "),
+			strings.Join(set, ", "),
+		)
+	}
+
+	return fmt.Sprintf(`INSERT INTO %s (%s) VALUES (%s) ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s;`,
 		table.Name,
 		strings.Join(keys, ", "),
 		strings.Join(values, ", "),
@@ -659,7 +681,7 @@ func (table *PostgresTable) GetUpsertManySqlContent() string {
 			values = append(values, table.GetNow())
 		}
 
-		return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM json_each(?) as s WHERE true ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s`,
+		return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM json_each(?) as s WHERE true ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s;`,
 			table.Name,
 			strings.Join(keys, ", "),
 			strings.Join(values, ", "),
@@ -679,7 +701,7 @@ func (table *PostgresTable) GetUpsertManySqlContent() string {
 		values = append(values, table.GetNow())
 	}
 
-	return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM jsonb_to_recordset($1) as t(%s) ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s`,
+	return fmt.Sprintf(`INSERT INTO %s (%s) SELECT %s FROM jsonb_to_recordset($1) as t(%s) ON CONFLICT(%s) DO UPDATE SET %s RETURNING %s;`,
 		table.Name,
 		strings.Join(keys, ", "),
 		strings.Join(values, ", "),
@@ -694,6 +716,29 @@ func (table *PostgresTable) GetUpdateSqlName() string {
 	return fmt.Sprintf("%sUpdateSql", strcase.ToLowerCamel(plural.Singular(table.Name)))
 }
 
+func (table *PostgresTable) HasUpdateReturning() bool {
+	return table.driver != "mysql" && table.driver != "mariadb"
+}
+
+func (table *PostgresTable) GetInsertSqlColumnsSorted() []*PostgresColumn {
+	return table.ColumnsUpdate
+}
+
+func (table *PostgresTable) GetUpdateSqlColumnsSorted() []*PostgresColumn {
+	keys := []*PostgresColumn{}
+	values := []*PostgresColumn{}
+
+	for _, val := range table.ColumnsUpdate {
+		if slices.Contains(table.Primary, val.Name) {
+			keys = append(keys, val)
+		} else {
+			values = append(values, val)
+		}
+	}
+
+	return append(values, keys...)
+}
+
 func (table *PostgresTable) GetUpdateSqlContent() string {
 	fields := []string{}
 	keys := []string{}
@@ -703,11 +748,11 @@ func (table *PostgresTable) GetUpdateSqlContent() string {
 		fields = append(fields, val.Name)
 	}
 
-	for id, val := range table.ColumnsUpdate {
+	for id, val := range table.GetUpdateSqlColumnsSorted() {
 		if slices.Contains(table.Primary, val.Name) {
-			keys = append(keys, fmt.Sprintf("%s=%s", val.Name, fmt.Sprintf("$%d", id+1)))
+			keys = append(keys, fmt.Sprintf("%s=%s", val.Name, param(id+1, table.driver)))
 		} else {
-			values = append(values, fmt.Sprintf("%s=%s", val.Name, fmt.Sprintf("$%d", id+1)))
+			values = append(values, fmt.Sprintf("%s=%s", val.Name, param(id+1, table.driver)))
 		}
 	}
 
@@ -715,7 +760,12 @@ func (table *PostgresTable) GetUpdateSqlContent() string {
 		values = append(values, "updated_at="+table.GetNow())
 	}
 
-	return fmt.Sprintf(`UPDATE %s SET %s WHERE %s RETURNING %s`, table.Name, strings.Join(values, ", "), strings.Join(keys, " AND "), strings.Join(fields, ", "))
+	// sad don't support update returning
+	if table.driver == "mysql" || table.driver == "mariadb" {
+		return fmt.Sprintf(`UPDATE %s SET %s WHERE %s;`, table.Name, strings.Join(values, ", "), strings.Join(keys, " AND "))
+	}
+
+	return fmt.Sprintf(`UPDATE %s SET %s WHERE %s RETURNING %s;`, table.Name, strings.Join(values, ", "), strings.Join(keys, " AND "), strings.Join(fields, ", "))
 }
 
 func (table *PostgresTable) GetUpdateManySqlName() string {
@@ -745,7 +795,7 @@ func (table *PostgresTable) GetUpdateManySqlContent() string {
 			values = append(values, fmt.Sprintf("json_extract(s.value, '$.%s') AS %s", val.NameJson, val.Name))
 		}
 
-		return fmt.Sprintf(`UPDATE %s SET %s FROM (SELECT %s FROM json_each(?) as s) as t WHERE %s RETURNING %s`,
+		return fmt.Sprintf(`UPDATE %s SET %s FROM (SELECT %s FROM json_each(?) as s) as t WHERE %s RETURNING %s;`,
 			table.Name,
 			strings.Join(set, ", "),
 			strings.Join(values, ", "),
@@ -754,7 +804,7 @@ func (table *PostgresTable) GetUpdateManySqlContent() string {
 		)
 	}
 
-	return fmt.Sprintf(`UPDATE %s SET %s FROM jsonb_to_recordset($1) as t(%s) WHERE %s RETURNING %s`,
+	return fmt.Sprintf(`UPDATE %s SET %s FROM jsonb_to_recordset($1) as t(%s) WHERE %s RETURNING %s;`,
 		table.Name,
 		strings.Join(set, ", "),
 		strings.Join(types, ", "),
@@ -781,11 +831,11 @@ func (table *PostgresTable) GetDeleteSoftSqlContent() string {
 
 	for id, val := range table.ColumnsUpdate {
 		if slices.Contains(table.Primary, val.Name) {
-			keys = append(keys, fmt.Sprintf("%s=%s", val.Name, fmt.Sprintf("$%d", id+1)))
+			keys = append(keys, fmt.Sprintf("%s=%s", val.Name, param(id+1, table.driver)))
 		}
 	}
 
-	return fmt.Sprintf(`UPDATE %s SET deleted_at=%s WHERE %s`, table.Name, table.GetNow(), strings.Join(keys, " AND "))
+	return fmt.Sprintf(`UPDATE %s SET deleted_at=%s WHERE %s;`, table.Name, table.GetNow(), strings.Join(keys, " AND "))
 }
 
 func (table *PostgresTable) GetDeleteHardSqlName() string {
@@ -797,11 +847,11 @@ func (table *PostgresTable) GetDeleteHardSqlContent() string {
 
 	for id, val := range table.ColumnsUpdate {
 		if slices.Contains(table.Primary, val.Name) {
-			keys = append(keys, fmt.Sprintf("%s=%s", val.Name, fmt.Sprintf("$%d", id+1)))
+			keys = append(keys, fmt.Sprintf("%s=%s", val.Name, param(id+1, table.driver)))
 		}
 	}
 
-	return fmt.Sprintf(`DELETE FROM %s WHERE %s`, table.Name, strings.Join(keys, " AND "))
+	return fmt.Sprintf(`DELETE FROM %s WHERE %s;`, table.Name, strings.Join(keys, " AND "))
 }
 
 func (table *PostgresTable) GetSelectPrimarySql() []SelectQuery {
@@ -839,6 +889,13 @@ func (table *PostgresTable) GetSelectSql() []SelectQueryRef {
 	}
 
 	return entries
+}
+
+func param(id int, driver string) string {
+	if driver == "mysql" || driver == "mariadb" {
+		return "?"
+	}
+	return fmt.Sprintf("$%d", id)
 }
 
 type FieldInitializer struct {

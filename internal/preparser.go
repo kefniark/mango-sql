@@ -8,9 +8,14 @@ import (
 
 // The parser used has some limitation (based on cockroachDB syntax),
 // The preparser is there to normalize the input and avoid a set of known errors
+var alter = []func(string) string{
+	removeTrigger,
+	removeCustomTypes,
+	replaceSubType,
+	replaceDatetime,
+}
 
 func normalize(sql string) string {
-	alter := []func(string) string{removeTrigger, removeCustomTypes, replaceSubType}
 	for _, f := range alter {
 		sql = f(sql)
 	}
@@ -53,4 +58,9 @@ func removeCustomTypes(sql string) string {
 
 func replaceSubType(sql string) string {
 	return strings.ReplaceAll(sql, "BLOB SUB_TYPE TEXT", "bytea")
+}
+
+func replaceDatetime(sql string) string {
+	// for mysql & mariadb
+	return strings.ReplaceAll(sql, "DATETIME", "TIMESTAMP")
 }

@@ -18,10 +18,10 @@ mangosql schema.sql
 # Download from docker registry: https://github.com/kefniark/mango-sql/pkgs/container/mango-sql
 
 # Use MangoSQL CLI
-docker run -it -v [MOUNT FOLDER]:/app/ ghcr.io/kefniark/mango-sql:latest -i /app/[YOUR SQL FILE] > [OUTPUT GO FILE]
+docker run -t --rm -v [MOUNT FOLDER]:/app/ ghcr.io/kefniark/mango-sql:latest -i /app/[YOUR SQL FILE] > [OUTPUT GO FILE]
 
 # Example
-docker run -it -v .:/app/ ghcr.io/kefniark/mango-sql:latest -i /app/schema.sql > client.go
+docker run -t --rm -v .:/app/ ghcr.io/kefniark/mango-sql:latest -i /app/schema.sql > client.go
 
 # -i/--inline: allow to get the generated code without dealing with volume mount and permission issues
 ```
