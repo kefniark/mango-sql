@@ -12,7 +12,7 @@ import (
 	"go.uber.org/zap/zaptest/observer"
 )
 
-//go:generate go run ../../../cmd/mangosql/ --package zaplogger --logger zap ./schema.sql
+//go:generate go run ../../../cmd/mangosql/ --output client.go --package zaplogger --logger zap ./schema.sql
 
 //go:embed *.sql
 var sqlFS embed.FS
