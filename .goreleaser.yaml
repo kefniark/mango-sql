@@ -7,6 +7,7 @@
 # vim: set ts=2 sw=2 tw=0 fo=cnqoj
 
 version: 2
+project_name: "mango-sql"
 
 before:
   hooks:
@@ -24,6 +25,15 @@ builds:
     goarch:
       - amd64
       - arm64
+
+nfpms:
+  - license: MIT
+    homepage: https://kefniark.github.io/mango-sql/
+    maintainer: Kevin Destrem <kefniark@users.noreply.github.com>
+    formats:
+      - apk
+      - deb
+      - rpm
 
 upx:
   - enabled: true
@@ -52,7 +62,7 @@ archives:
     # this name template makes the OS and Arch compatible with the results of `uname`.
     name_template: >-
       {{ .ProjectName }}_
-      {{- title .Os }}_
+      {{- tolower .Os }}_
       {{- if eq .Arch "amd64" }}x86_64
       {{- else if eq .Arch "386" }}i386
       {{- else }}{{ .Arch }}{{ end }}

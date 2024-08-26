@@ -21,6 +21,7 @@ in {
     pkgs.just
     pkgs.ko
     pkgs.upx
+    pkgs.nfpm
   ];
 
   # https://devenv.sh/tests/
