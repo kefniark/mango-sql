@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//go:generate go run ../../../cmd/mangosql/ --package zerologlogger --logger zerolog ./schema.sql
+
 //go:embed *.sql
 var sqlFS embed.FS
 

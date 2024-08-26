@@ -11,30 +11,7 @@ docs:
     npm run docs:dev
 
 generate:
-    # tests
-    go run ./cmd/mangosql/ --output ./tests/postgres/auto-increment/client.go --package autoincrement --logger console ./tests/postgres/auto-increment/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/postgres/composite/client.go --package composite --logger console ./tests/postgres/composite/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/postgres/types/client.go --package types --logger console ./tests/postgres/types/schema.sql
-
-    # test loggers
-    go run ./cmd/mangosql/ --output ./tests/logger/zap-logger/client.go --package zaplogger --logger zap ./tests/logger/zap-logger/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/logger/logrus-logger/client.go --package logruslogger --logger logrus ./tests/logger/logrus-logger/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/logger/zerolog-logger/client.go --package zerologlogger --logger zerolog ./tests/logger/zerolog-logger/schema.sql
-
-    # test queries
-    go run ./cmd/mangosql/ --output ./tests/queries/pq/client.go --package pq --driver pq --logger console ./tests/queries/sqlited/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/queries/pgx/client.go --package pgx --logger console ./tests/queries/sqlited/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/queries/mysql/client.go --package mysql --driver mysql --logger console ./tests/queries/mysql/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/queries/mariadb/client.go --package mariadb --driver mariadb --logger console ./tests/queries/mariadb/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/queries/sqlited/client.go --package sqlited --driver sqlite --logger console ./tests/queries/sqlited/schema.sql
-
-    # bench
-    mkdir -p ./tests/bench/pq
-    mkdir -p ./tests/bench/pgx
-    mkdir -p ./tests/bench/sqlite
-    go run ./cmd/mangosql/ --output ./tests/bench/pq/client.go --package pq --driver pq ./tests/bench/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/bench/pgx/client.go --package pgx ./tests/bench/schema.sql
-    go run ./cmd/mangosql/ --output ./tests/bench/sqlite/client.go --package pq --driver sqlite ./tests/bench/schema.sqlite.sql
+    go generate ./tests/...
 
 bench:
     CGO_ENABLED=0 go test -bench=. -benchmem ./tests/bench | tee bench.log

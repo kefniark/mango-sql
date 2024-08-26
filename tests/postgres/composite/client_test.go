@@ -10,6 +10,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//go:generate go run ../../../cmd/mangosql/ --package composite --logger console ./schema.sql
+
 //go:embed *.sql
 var sqlFS embed.FS
 

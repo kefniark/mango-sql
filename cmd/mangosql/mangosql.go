@@ -7,6 +7,7 @@ import (
 	"go/format"
 	"os"
 	"path"
+	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
@@ -174,7 +175,6 @@ func generate(opts GenerateOptions) error {
 	}
 
 	if opts.Inline {
-		fmt.Println(string(formatted))
 		return nil
 	}
 
@@ -186,7 +186,9 @@ func generate(opts GenerateOptions) error {
 	defer f.Close()
 
 	_, err = f.WriteString(string(formatted))
-	fmt.Printf("Generated %s\n", path.Join(folder, file))
+	if path, err := filepath.Abs(path.Join(folder, file)); err == nil {
+		fmt.Printf("Generated %s\n", path)
+	}
 
 	return err
 }

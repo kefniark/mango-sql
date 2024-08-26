@@ -92,3 +92,12 @@ import "{your_project_url}/database"
 ```
 :::
 
+::: tip
+Mangosql can be combined with go:generate (ref: https://go.dev/blog/generate)
+
+```go
+//go:generate mangosql --output ./client.go --driver mysql ./schema.sql
+```
+
+This allow to keep code generation and usage really close to each other
+:::

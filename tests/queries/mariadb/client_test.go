@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+//go:generate go run ../../../cmd/mangosql/ --output ./client.go --package mariadb --driver mariadb --logger console ./schema.sql
+
 //go:embed *.sql
 var sqlPqFS embed.FS
 

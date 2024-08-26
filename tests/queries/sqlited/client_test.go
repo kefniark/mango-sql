@@ -11,6 +11,8 @@ import (
 	_ "modernc.org/sqlite"
 )
 
+//go:generate go run ../../../cmd/mangosql/ --output ./client.go --package sqlited --driver sqlite --logger console ./schema.sql
+
 func newTestDB(t *testing.T) (*DBClient, func()) {
 	t.Helper()
 	db, err := sqlx.Open("sqlite", ":memory:")

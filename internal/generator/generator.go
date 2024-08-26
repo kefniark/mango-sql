@@ -149,8 +149,6 @@ func Generate(schema *core.SQLSchema, contents io.Writer, pkg string, driver str
 		logConfig.Type = ``
 	}
 
-	fmt.Println(logger, logConfig)
-
 	if err = headerTmpl.Execute(contents, HeaderData{
 		Package:     pkg,
 		Url:         "https://github.com/kefniark/mangosql",
