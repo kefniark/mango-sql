@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-//go:generate go run ../../../cmd/mangosql/ --package logruslogger --logger logrus ./schema.sql
+//go:generate go run ../../../cmd/mangosql/ --output ./client.go --package logruslogger --logger logrus ./schema.sql
 
 //go:embed *.sql
 var sqlFS embed.FS
