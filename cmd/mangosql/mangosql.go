@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	"github.com/kefniark/mango-sql/internal"
+	"github.com/kefniark/mango-sql/internal/generator"
 	"github.com/urfave/cli/v2"
 )
 
@@ -149,7 +150,7 @@ func generate(opts GenerateOptions) error {
 	var b bytes.Buffer
 	contents := bufio.NewWriter(&b)
 
-	if err = internal.Generate(schema, contents, opts.Package, opts.Driver, opts.Logger); err != nil {
+	if err = generator.Generate(schema, contents, opts.Package, opts.Driver, opts.Logger); err != nil {
 		return err
 	}
 

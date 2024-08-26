@@ -50,3 +50,4 @@ update:
     devenv update
     go get -u ./...
     go mod tidy
+    npm update

@@ -13,6 +13,7 @@ var alter = []func(string) string{
 	removeCustomTypes,
 	replaceSubType,
 	replaceDatetime,
+	replaceSQLITEAutoincrement,
 }
 
 func normalize(sql string) string {
@@ -63,4 +64,9 @@ func replaceSubType(sql string) string {
 func replaceDatetime(sql string) string {
 	// for mysql & mariadb
 	return strings.ReplaceAll(sql, "DATETIME", "TIMESTAMP")
+}
+
+func replaceSQLITEAutoincrement(sql string) string {
+	// for sqlite
+	return strings.ReplaceAll(sql, "AUTOINCREMENT", "AUTO_INCREMENT")
 }

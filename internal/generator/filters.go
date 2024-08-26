@@ -1,4 +1,4 @@
-package database
+package generator
 
 import (
 	"slices"
