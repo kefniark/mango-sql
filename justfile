@@ -13,7 +13,7 @@ docs:
     npm run docs:dev
 
 generate:
-    go mod tidy
+    go mod download
     go generate ./tests/...
 
 bench:
