@@ -25,6 +25,7 @@ in {
 
   # https://devenv.sh/tests/
   enterTest = ''
+  just generate
   just test
   '';
 
