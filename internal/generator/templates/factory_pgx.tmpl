@@ -98,14 +98,6 @@ func (db DBClient) Transaction(transaction func(dbClient *DBClient) error) (e er
 	return tx.Commit(context.Background())
 }
 
-// Split slice into chunks of the given size
-func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
-	for chunkSize < len(items) {
-		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
-	}
-	return append(chunks, items)
-}
-
 // Execute a Custom SQL query and get one row result.
 //
 // Usage:

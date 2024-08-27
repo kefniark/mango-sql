@@ -30,7 +30,7 @@ func (q *{{ .Table.NameNormalized }}Queries) InsertMany(inputs []{{ .Table.NameN
 		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.InsertMany", requestErr, time.Since(start), sql, inputs)
 	}(){{ end }}
 	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
-	for _, chunk := range chunkBy(inputs, 250) {
+	for chunk := range slices.Chunk(inputs, 250) {
 		records := make([]{{ .Table.NameNormalized }}Update, len(chunk))
 		{{ if $.HasUUID }}uuid.EnableRandPool()
 		{{ end }}for i, input := range chunk {
@@ -90,7 +90,7 @@ func (q *{{ .Table.NameNormalized }}Queries) UpsertMany(inputs []{{ .Table.NameN
 		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.UpsertMany", requestErr, time.Since(start), sql, inputs)
 	}(){{ end }}
 	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
-	for _, chunk := range chunkBy(inputs, 250) {
+	for chunk := range slices.Chunk(inputs, 250) {
 		data, err := json.Marshal(chunk)
 		if err != nil {
 			return nil, err
@@ -139,7 +139,7 @@ func (q *{{ .Table.NameNormalized }}Queries) UpdateMany(inputs []{{ .Table.NameN
 		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.UpdateMany", requestErr, time.Since(start), sql, inputs)
 	}(){{ end }}
 	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
-	for _, chunk := range chunkBy(inputs, 250) {
+	for chunk := range slices.Chunk(inputs, 250) {
 		data, err := json.Marshal(chunk)
 		if err != nil {
 			return nil, err
