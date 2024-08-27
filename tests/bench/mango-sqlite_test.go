@@ -3,11 +3,13 @@ package bench
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
 	driver_sqlite "github.com/kefniark/mango-sql/tests/bench/sqlite"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	_ "modernc.org/sqlite"
 )
@@ -41,68 +43,68 @@ func BenchmarkMangoSQLite(t *testing.B) {
 	id := int64(0)
 
 	t.Run("InsertOne", func(t *testing.B) {
-		for i := 0; i < t.N; i++ {
+		for range t.N {
 			id++
 			_, err := dbMangoSqlite.User.Insert(driver_sqlite.UserCreate{Id: id, Name: "John Doe", Email: "john@email.com"})
-			assert.NoError(t, err)
+			require.NoError(t, err)
 		}
 	})
 
 	for _, value := range samples {
-		t.Run("InsertMany_"+fmt.Sprint(value), func(t *testing.B) {
-			for i := 0; i < t.N; i++ {
+		t.Run("InsertMany_"+strconv.Itoa(value), func(t *testing.B) {
+			for range t.N {
 				create := make([]driver_sqlite.UserCreate, value)
-				for i := 0; i < len(create); i++ {
+				for i := range len(create) {
 					id++
 					create[i] = driver_sqlite.UserCreate{Id: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 				}
 
 				_, err := dbMangoSqlite.User.InsertMany(create)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
 
 	t.Run("FindById", func(t *testing.B) {
 		create := make([]driver_sqlite.UserCreate, 10)
-		for i := 0; i < len(create); i++ {
+		for i := range len(create) {
 			id++
 			create[i] = driver_sqlite.UserCreate{Id: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 		}
 
 		users, err := dbMangoSqlite.User.InsertMany(create)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 		t.ResetTimer()
 
-		for i := 0; i < t.N; i++ {
-			for i := 0; i < len(create); i++ {
+		for range t.N {
+			for i := range len(create) {
 				user, err := dbMangoSqlite.User.FindById(users[i].Id)
-				assert.NoError(t, err)
+				require.NoError(t, err)
 				assert.Equal(t, users[i].Id, user.Id)
 			}
 		}
 	})
 
 	for _, value := range samples {
-		t.Run("FindMany_"+fmt.Sprint(value), func(t *testing.B) {
+		t.Run("FindMany_"+strconv.Itoa(value), func(t *testing.B) {
 			create := make([]driver_sqlite.UserCreate, value)
 			ids := []int64{}
-			for i := 0; i < len(create); i++ {
+			for i := range len(create) {
 				id++
 				ids = append(ids, id)
 				create[i] = driver_sqlite.UserCreate{Id: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 			}
 
 			_, err := dbMangoSqlite.User.InsertMany(create)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 			t.ResetTimer()
 
-			for i := 0; i < t.N; i++ {
+			for range t.N {
 				entries, err := dbMangoSqlite.User.FindMany(
 					dbMangoSqlite.User.Query.Id.In(ids...),
 				)
-				assert.NoError(t, err)
-				assert.Equal(t, value, len(entries))
+				require.NoError(t, err)
+				assert.Len(t, entries, value)
 			}
 		})
 	}

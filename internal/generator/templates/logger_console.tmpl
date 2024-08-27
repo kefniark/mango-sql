@@ -1,31 +1,14 @@
-type LogLevel int
-const (
-	Debug LogLevel = iota + 1
-	Info
-	Warn
-	Error
-)
-
-func (ctx DBContext) logQuery(level LogLevel, msg string, err error, duration time.Duration, sql string, args ...interface{}) {
+func (ctx DBContext) logQuery(msg string, err error, duration time.Duration, sql string, args ...interface{}) {
 	if err != nil {
 		log.Println("[\033[31mERROR\033[0m]\033[31m", msg, "\033[0m", "\n   | \033[32mError:\033[0m", err, "\n   | \033[32mArgs:\033[0m", args, "\n   | \033[32mSQL:\033[0m", sql)
 		return
 	}
 
-	if level < Warn && duration > time.Millisecond*500 {
-		level = Warn
-		msg = "[SLOW QUERY] " + msg
+	if duration > time.Millisecond*500 {
+		log.Println("[\033[33mWARN\033[0m]\033[33m", "[SLOW QUERY]", msg, "\033[0m", duration, "\n   | \033[32mArgs:\033[0m", args, "\n    | \033[32mSQL:\033[0m", sql)
+		return
 	}
 
-	switch level {
-	case Debug:
-		log.Println("[\033[35mDEBUG\033[0m]\033[33m", msg, "\033[0m", duration, "\n   | \033[32mArgs:\033[0m", args, "\n   | \033[32mSQL:\033[0m", sql)
-	case Info:
-		log.Println("[\033[34mINFO\033[0m]\033[33m", msg, "\033[0m", duration, "\n   | \033[32mArgs:\033[0m", args, "\n    | \033[32mSQL:\033[0m", sql)
-	case Warn:
-		log.Println("[\033[33mWARN\033[0m]\033[33m", msg, "\033[0m", duration, "\n   | \033[32mArgs:\033[0m", args, "\n    | \033[32mSQL:\033[0m", sql)
-	case Error:
-		log.Println("[\033[31mERROR\033[0m]\033[33m", msg, "\033[0m", duration, "\n   | \033[32mArgs:\033[0m", args, "\n   | \033[32mSQL:\033[0m", sql)
-	}
+	log.Println("[\033[35mDEBUG\033[0m]\033[33m", msg, "\033[0m", duration, "\n   | \033[32mArgs:\033[0m", args, "\n   | \033[32mSQL:\033[0m", sql)
 }
 

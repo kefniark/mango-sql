@@ -1,31 +1,14 @@
-type LogLevel int
-const (
-	Debug LogLevel = iota + 1
-	Info
-	Warn
-	Error
-)
-
-func (ctx DBContext) logQuery(level LogLevel, msg string, err error, duration time.Duration, sql string, args ...interface{}) {
+func (ctx DBContext) logQuery(msg string, err error, duration time.Duration, sql string, args ...interface{}) {
 	if err != nil {
 		ctx.logger.Error(msg, zap.Error(err), zap.Any("args", args), zap.String("sql", sql))
 		return
 	}
 
-	if level < Warn && duration > time.Millisecond*500 {
-		level = Warn
-		msg = "[SLOW QUERY] " + msg
+	if duration > time.Millisecond*500 {
+		ctx.logger.Warn("[SLOW QUERY] " + msg, zap.Duration("duration", duration), zap.Any("args", args), zap.String("sql", sql))
+		return
 	}
 
-	switch level {
-	case Debug:
-		ctx.logger.Debug(msg, zap.Duration("duration", duration), zap.Any("args", args), zap.String("sql", sql))
-	case Info:
-		ctx.logger.Info(msg, zap.Duration("duration", duration), zap.Any("args", args), zap.String("sql", sql))
-	case Warn:
-		ctx.logger.Warn(msg, zap.Duration("duration", duration), zap.Any("args", args), zap.String("sql", sql))
-	case Error:
-		ctx.logger.Error(msg, zap.Duration("duration", duration), zap.Any("args", args), zap.String("sql", sql))
-	}
+	ctx.logger.Debug(msg, zap.Duration("duration", duration), zap.Any("args", args), zap.String("sql", sql))
 }
 

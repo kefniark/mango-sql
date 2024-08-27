@@ -29,7 +29,7 @@ func parseBenchmarks() []BenchData {
 		fields := strings.Fields(line)
 
 		// name
-		suite := strings.Replace(strings.Split(fields[0], "/")[0], "Benchmark", "", -1)
+		suite := strings.ReplaceAll(strings.Split(fields[0], "/")[0], "Benchmark", "")
 		sub := strings.Split(fields[0], "/")[1]
 		name := sub
 		param := "1"
@@ -80,6 +80,8 @@ func groupBySuite(data []BenchData) map[string][]BenchData {
 	return entries
 }
 
+const unitConversion = 1000000000
+
 func generateLineSpeedData(data []BenchData, filters ...string) []opts.LineData {
 	items := make([]opts.LineData, 0)
 	for _, v := range data {
@@ -88,7 +90,7 @@ func generateLineSpeedData(data []BenchData, filters ...string) []opts.LineData 
 				continue
 			}
 		}
-		items = append(items, opts.LineData{Value: 1000000000 / v.Speed})
+		items = append(items, opts.LineData{Value: unitConversion / v.Speed})
 	}
 	return items
 }

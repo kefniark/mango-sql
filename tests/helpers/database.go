@@ -11,7 +11,7 @@ import (
 //go:embed migrations/*.sql
 var sqlFS embed.FS
 
-func NewDBConfigWith(t *testing.T, data []byte, name string) *pgtestdb.Config {
+func NewDBConfigWith(t *testing.T, data []byte, _ string) *pgtestdb.Config {
 	t.Helper()
 
 	var migrator pgtestdb.Migrator = &SchemaMigrator{
@@ -30,7 +30,7 @@ func NewDBConfigWith(t *testing.T, data []byte, name string) *pgtestdb.Config {
 	return pgtestdb.Custom(t, conf, migrator)
 }
 
-func NewDBConfig(t *testing.T, fs embed.FS) *pgtestdb.Config {
+func NewDBConfig(t *testing.T, _ embed.FS) *pgtestdb.Config {
 	t.Helper()
 
 	gm := goosemigrator.New(

@@ -2,22 +2,25 @@ build:
     CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/mangosql ./cmd/mangosql
 
 format:
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
     golangci-lint run --fix ./...
 
 lint:
+    go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
     golangci-lint run ./...
 
 docs:
     npm run docs:dev
 
 generate:
+    go mod download
     go generate ./tests/...
 
 bench:
     CGO_ENABLED=0 go test -bench=. -benchmem ./tests/bench | tee bench.log
     go run ./cmd/bench/
 
-test: generate
+test:
     go test -race ./...
     go test --cover --coverprofile=coverage.txt ./tests/queries/...
     go tool cover -html=coverage.txt -o coverage.html

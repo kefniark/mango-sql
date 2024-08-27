@@ -87,8 +87,8 @@ func NewDBClient() (db *DBClient, close func()) {
 You are done with the setup, you can now use the Generated Client in your code
 
 ```go
-db, close := NewDBClient()
-defer close()
+db, closeDB := NewDBClient()
+defer closeDB()
 
 user, err := db.User.FindById(1)
 // ...

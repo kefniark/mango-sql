@@ -22,7 +22,7 @@ func ParseQueries(schema *core.SQLSchema, sql string) error {
 	macro := findQueriesMacro(sql)
 
 	w := &walk.AstWalker{
-		Fn: func(ctx interface{}, node interface{}) (stop bool) {
+		Fn: func(_ interface{}, node interface{}) (stop bool) {
 			switch stmt := node.(type) {
 			case *tree.SelectClause:
 				parseSelectQuery(schema, stmt, macro)
@@ -44,13 +44,13 @@ func findQueriesMacro(sql string) []core.QueryMacro {
 		macro = append(macro, core.QueryMacro{
 			Method: res[1],
 			Name:   res[2],
-			Query:  normalizeSql(res[3]),
+			Query:  normalizeSQL(res[3]),
 		})
 	}
 	return macro
 }
 
-func normalizeSql(sql string) string {
+func normalizeSQL(sql string) string {
 	return strings.ToLower(strings.Join(strings.Fields(sql), ""))
 }
 
@@ -66,7 +66,7 @@ func ParseSchema(sql string) (*core.SQLSchema, error) {
 	}
 
 	w := &walk.AstWalker{
-		Fn: func(ctx interface{}, node interface{}) (stop bool) {
+		Fn: func(_ interface{}, node interface{}) (stop bool) {
 			switch stmt := node.(type) {
 			case *tree.CreateTable:
 				parseTable(schema, stmt)
@@ -145,7 +145,7 @@ func parseSelectQuery(schema *core.SQLSchema, stmt *tree.SelectClause, macro []c
 
 func findQueryMacro(query string, macro []core.QueryMacro) *core.QueryMacro {
 	for _, m := range macro {
-		if strings.HasPrefix(normalizeSql(query), m.Query) {
+		if strings.HasPrefix(normalizeSQL(query), m.Query) {
 			return &m
 		}
 	}
@@ -250,6 +250,7 @@ func findTableDeps(schema *core.SQLSchema, table *tree.SelectClause, macro []cor
 	return &query
 }
 
+//nolint:gocognit // Need refactoring
 func resolveTableColumns(field string, as string, tables []core.TableDeps, schema *core.SQLSchema, i int) []*core.SQLColumn {
 	prefix := ""
 	name := strings.TrimSpace(field)
@@ -302,9 +303,9 @@ func resolveTableColumns(field string, as string, tables []core.TableDeps, schem
 						Name:     name,
 						As:       strings.ToLower(strcase.ToSnake(fmt.Sprintf("%s_%s", tableName, as))),
 						Type:     column.Type,
-						TypeSql:  column.TypeSql,
+						TypeSQL:  column.TypeSQL,
 						Nullable: column.Nullable,
-						Order:    i*1000000 + j*10000 + k*100 + column.Order,
+						Order:    i*order3 + j*order2 + k*order1 + column.Order,
 					})
 				}
 			} else if field, ok := c.Columns[name]; ok {
@@ -321,9 +322,9 @@ func resolveTableColumns(field string, as string, tables []core.TableDeps, schem
 					Name:     name,
 					As:       strings.ToLower(strcase.ToSnake(fmt.Sprintf("%s_%s", tableName, as))),
 					Type:     field.Type,
-					TypeSql:  field.TypeSql,
+					TypeSQL:  field.TypeSQL,
 					Nullable: field.Nullable,
-					Order:    i*1000000 + j*10000 + k*100 + field.Order,
+					Order:    i*order3 + j*order2 + k*order1 + field.Order,
 				})
 			}
 		}
@@ -333,7 +334,7 @@ func resolveTableColumns(field string, as string, tables []core.TableDeps, schem
 		cleanupName := strings.Trim(strings.ReplaceAll(strings.ReplaceAll(field, "(", "."), ")", "."), "-.")
 
 		fieldType := "string"
-		fieldSqlType := "UNKNOWN"
+		fieldSQLType := "UNKNOWN"
 
 		for _, n := range []string{"count("} {
 			if strings.HasPrefix(strings.ToLower(name), n) {
@@ -355,14 +356,20 @@ func resolveTableColumns(field string, as string, tables []core.TableDeps, schem
 			As:       as,
 			Ref:      strcase.ToCamel(cleanupName),
 			Type:     fieldType,
-			TypeSql:  fieldSqlType,
+			TypeSQL:  fieldSQLType,
 			Nullable: true,
-			Order:    i * 1000000,
+			Order:    i * order3,
 		})
 	}
 
 	return columns
 }
+
+const (
+	order3 = 1000000
+	order2 = 10000
+	order1 = 100
+)
 
 func parseTable(schema *core.SQLSchema, stmt *tree.CreateTable) {
 	tableSchema := &core.SQLTable{
@@ -377,15 +384,15 @@ func parseTable(schema *core.SQLSchema, stmt *tree.CreateTable) {
 			col := &core.SQLColumn{
 				Name:     def.Name.Normalize(),
 				Type:     def.Type.String(),
-				TypeSql:  def.Type.SQLString(),
+				TypeSQL:  def.Type.SQLString(),
 				Nullable: def.Nullable.Nullability != tree.NotNull,
 				Order:    len(tableSchema.Columns) + 1,
 			}
 
 			tableSchema.Columns[def.Name.Normalize()] = col
 
-			if col.TypeSql == "STRING" {
-				col.TypeSql = "TEXT"
+			if col.TypeSQL == "STRING" {
+				col.TypeSQL = "TEXT"
 			}
 
 			col.HasDefault = def.HasDefaultExpr()
@@ -492,7 +499,11 @@ func parseAlterTable(schema *core.SQLSchema, stmt *tree.AlterTable) {
 
 			switch cmd.ConstraintDef.(type) {
 			case *tree.UniqueConstraintTableDef:
-				unique := cmd.ConstraintDef.(*tree.UniqueConstraintTableDef)
+				unique, ok := cmd.ConstraintDef.(*tree.UniqueConstraintTableDef)
+				if !ok {
+					return
+				}
+
 				refTable.Constraints = append(refTable.Constraints, &core.SQLTableConstraint{
 					Name:    unique.Name.Normalize(),
 					Columns: NamesToStrings(unique.Columns),
@@ -504,7 +515,10 @@ func parseAlterTable(schema *core.SQLSchema, stmt *tree.AlterTable) {
 				})
 
 			case *tree.ForeignKeyConstraintTableDef:
-				fk := cmd.ConstraintDef.(*tree.ForeignKeyConstraintTableDef)
+				fk, ok := cmd.ConstraintDef.(*tree.ForeignKeyConstraintTableDef)
+				if !ok {
+					return
+				}
 
 				refTable.References = append(refTable.References, &core.SQLTableReference{
 					Name:         fk.Name.Normalize(),

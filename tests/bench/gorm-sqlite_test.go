@@ -3,11 +3,13 @@ package bench
 import (
 	"fmt"
 	"os"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	gormSqlite "gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -17,7 +19,7 @@ import (
 
 type UserSqlite struct {
 	gorm.Model
-	Id        int        `json:"id" db:"id" `
+	ID        int        `json:"id" db:"id" `
 	Email     string     `json:"email" db:"email"`
 	Name      string     `json:"name" db:"name"`
 	CreatedAt time.Time  `json:"created_at" db:"created_at"`
@@ -67,68 +69,67 @@ func BenchmarkGormSQLite(t *testing.B) {
 	id := 0
 
 	t.Run("InsertOne", func(t *testing.B) {
-		for i := 0; i < t.N; i++ {
+		for range t.N {
 			id++
-			tx := dbGormSqlite.Create(&UserSqlite{Id: id, Name: "John Doe", Email: "john@email.com"})
-			assert.NoError(t, tx.Error)
+			tx := dbGormSqlite.Create(&UserSqlite{ID: id, Name: "John Doe", Email: "john@email.com"})
+			require.NoError(t, tx.Error)
 		}
 	})
 
 	for _, value := range samples {
-		t.Run("InsertMany_"+fmt.Sprint(value), func(t *testing.B) {
-			for i := 0; i < t.N; i++ {
+		t.Run("InsertMany_"+strconv.Itoa(value), func(t *testing.B) {
+			for range t.N {
 				create := make([]UserSqlite, value)
-				for i := 0; i < len(create); i++ {
+				for i := range len(create) {
 					id++
-					create[i] = UserSqlite{Id: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
+					create[i] = UserSqlite{ID: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 				}
 
 				tx := dbGormSqlite.Create(&create)
-				assert.NoError(t, tx.Error)
+				require.NoError(t, tx.Error)
 			}
 		})
 	}
 
 	t.Run("FindById", func(t *testing.B) {
 		create := make([]UserSqlite, 10)
-		for i := 0; i < len(create); i++ {
+		for i := range len(create) {
 			id++
-			create[i] = UserSqlite{Id: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
+			create[i] = UserSqlite{ID: id, Name: fmt.Sprintf("John Doe %d", i), Email: fmt.Sprintf("john+%d@email.com", i)}
 		}
 
 		tx := dbGormSqlite.Create(&create)
-		assert.NoError(t, tx.Error)
+		require.NoError(t, tx.Error)
 		t.ResetTimer()
 
-		for i := 0; i < t.N; i++ {
-			for i := 0; i < len(create); i++ {
+		for range t.N {
+			for i := range len(create) {
 				data := &UserSqlite{}
-				tx := dbGormSqlite.Take(data, "id = ?", create[i].Id)
-				assert.NoError(t, tx.Error)
+				tx := dbGormSqlite.Take(data, "id = ?", create[i].ID)
+				require.NoError(t, tx.Error)
 
-				assert.Equal(t, create[i].Id, data.Id)
+				assert.Equal(t, create[i].ID, data.ID)
 			}
 		}
 	})
 
 	for _, value := range samples {
-		t.Run("FindMany_"+fmt.Sprint(value), func(t *testing.B) {
-			create := make([]UserSqlite, value)
+		t.Run("FindMany_"+strconv.Itoa(value), func(t *testing.B) {
 			ids := []int{}
-			for i := 0; i < len(create); i++ {
+			for range value {
 				id++
-				user := &UserSqlite{Id: id, Name: "John Doe", Email: "john@email.com"}
+				user := &UserSqlite{ID: id, Name: "John Doe", Email: "john@email.com"}
 				tx := dbGormSqlite.Create(user)
-				assert.NoError(t, tx.Error)
-				ids = append(ids, user.Id)
+				require.NoError(t, tx.Error)
+				ids = append(ids, user.ID)
 			}
 			t.ResetTimer()
 
-			for i := 0; i < t.N; i++ {
+			for range t.N {
 				data := []UserSqlite{}
 				tx := dbGormSqlite.Find(&data, ids)
-				assert.NoError(t, tx.Error)
-				assert.Equal(t, value, len(data))
+				require.NoError(t, tx.Error)
+				assert.Len(t, data, value)
 			}
 		})
 	}
