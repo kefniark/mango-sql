@@ -13,13 +13,14 @@ docs:
     npm run docs:dev
 
 generate:
+    go mod tidy
     go generate ./tests/...
 
 bench:
     CGO_ENABLED=0 go test -bench=. -benchmem ./tests/bench | tee bench.log
     go run ./cmd/bench/
 
-test: generate
+test:
     go test -race ./...
     go test --cover --coverprofile=coverage.txt ./tests/queries/...
     go tool cover -html=coverage.txt -o coverage.html

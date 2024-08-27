@@ -10,6 +10,7 @@ in {
     # Golang
     pkgs-unstable.go_1_23
     pkgs-unstable.gotools
+    pkgs-unstable.gocover-cobertura
 
     # NodeJS (docs)
     pkgs.nodejs_20
