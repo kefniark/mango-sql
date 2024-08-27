@@ -2,11 +2,9 @@ build:
     CGO_ENABLED=0 go build -ldflags="-s -w" -o bin/mangosql ./cmd/mangosql
 
 format:
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
     golangci-lint run --fix ./...
 
 lint:
-    go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.60.3
     golangci-lint run ./...
 
 docs:
