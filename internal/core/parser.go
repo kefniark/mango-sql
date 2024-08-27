@@ -39,7 +39,7 @@ type SQLColumn struct {
 	As         string
 	Ref        string
 	Type       string
-	TypeSql    string
+	TypeSQL    string
 	Nullable   bool
 	Table      string
 	TableAs    string

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestTrigger(t *testing.T) {
@@ -23,9 +24,9 @@ func TestTrigger(t *testing.T) {
 			UPDATE actor SET last_update = DATETIME('NOW')  WHERE rowid = new.rowid;
 		END;
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 4, len(schema.Tables["actor"].Columns))
+	assert.Len(t, schema.Tables["actor"].Columns, 4)
 }
 
 func TestEnums(t *testing.T) {
@@ -42,9 +43,9 @@ func TestEnums(t *testing.T) {
  
 		CREATE TYPE mood AS ENUM ('sad', 'ok', 'happy');
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 4, len(schema.Tables["actor"].Columns))
+	assert.Len(t, schema.Tables["actor"].Columns, 4)
 }
 
 func TestBlob(t *testing.T) {
@@ -60,7 +61,7 @@ func TestBlob(t *testing.T) {
 
 		CREATE  INDEX idx_actor_last_name ON actor(last_name);
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 5, len(schema.Tables["actor"].Columns))
+	assert.Len(t, schema.Tables["actor"].Columns, 5)
 }

@@ -5,19 +5,17 @@
 //     // ...
 //   })
 func (q *{{ .Table.NameNormalized }}Queries) Insert(input {{ .Table.NameNormalized }}Create) (requestData *{{ .Table.NameNormalized }}Model, requestErr error) {
-	const sql = `{{ .Table.GetCreateSqlContent }}`{{ if .Logger.HasLogger }}
+	const sql = `{{ .Table.GetCreateSQLContent }}`{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Insert", requestErr, time.Since(start), sql, input)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.Insert", requestErr, time.Since(start), sql, input)
 	}(){{ end }}
 {{ if .Table.HasInsertReturning }}	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .Table.ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
 {{ else }}	_, err := Exec(q.ctx, sql, {{ range .Table.GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .Table.ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
 	if err != nil {
 		return nil, err
 	}
-	return q.FindById({{ range .Table.ColumnIds }}input.{{ .NameNormalized }},{{ end }}){{ end }}
-	// return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetPrimaryKeyConstructors }} {{ .Init }}, {{ end }} {{ range .Table.ColumnsCreate }}{{ if .IsArray }}pq.Array(input.{{ .NameNormalized }}), {{ else }}input.{{ .NameNormalized }}, {{ end }}{{ end }})
-}
+	return q.FindById({{ range .Table.ColumnIDs }}input.{{ .NameNormalized }},{{ end }}){{ end }}}
 
 // Batch Insert {{ .Table.NameNormalized }}
 //
@@ -26,17 +24,17 @@ func (q *{{ .Table.NameNormalized }}Queries) Insert(input {{ .Table.NameNormaliz
 //     // ...
 //   })
 func (q *{{ .Table.NameNormalized }}Queries) InsertMany(inputs []{{ .Table.NameNormalized }}Create) (requestData []{{ .Table.NameNormalized }}PrimaryKeySerialized, requestErr error) {
-	const sql = `{{ .Table.GetCreateManySqlContent }}`{{ if .Logger.HasLogger }}
+	const sql = `{{ .Table.GetCreateManySQLContent }}`{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.InsertMany", requestErr, time.Since(start), sql, inputs)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.InsertMany", requestErr, time.Since(start), sql, inputs)
 	}(){{ end }}
 	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
 		records := make([]{{ .Table.NameNormalized }}Update, len(chunk))
 		{{ if $.HasUUID }}uuid.EnableRandPool()
 		{{ end }}for i, input := range chunk {
-			records[i] = {{ if and (not .Table.HasCompositeId) (not .Table.HasStructCopy) }}{{ .Table.NameNormalized }}Update{
+			records[i] = {{ if and (not .Table.HasCompositeID) (not .Table.HasStructCopy) }}{{ .Table.NameNormalized }}Update{
 				{{ range .Table.GetPrimaryKeyConstructors }}          {{ .Name }}: {{ .Init }},
         		{{ end }}{{ range .Table.ColumnsCreate }}          {{ .NameNormalized }}: input.{{ .NameNormalized }},
 				{{ end }}
@@ -49,11 +47,12 @@ func (q *{{ .Table.NameNormalized }}Queries) InsertMany(inputs []{{ .Table.NameN
 			return nil, err
 		}
 
-		if res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
+		res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data);
+		if err != nil {
 			return nil, err
-		} else {
-			ids = append(ids, res...)
 		}
+
+		ids = append(ids, res...)
 	}
 
 	return ids, nil
@@ -66,18 +65,17 @@ func (q *{{ .Table.NameNormalized }}Queries) InsertMany(inputs []{{ .Table.NameN
 //     // ...
 //   })
 func (q *{{ .Table.NameNormalized }}Queries) Upsert(input {{ .Table.NameNormalized }}Update) (requestData *{{ .Table.NameNormalized }}Model, requestErr error) {
-	const sql = `{{ .Table.GetUpsertSqlContent }}`{{ if .Logger.HasLogger }}
+	const sql = `{{ .Table.GetUpsertSQLContent }}`{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Upsert", requestErr, time.Since(start), sql, input)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.Upsert", requestErr, time.Since(start), sql, input)
 	}(){{ end }}
-{{ if .Table.HasUpdateReturning }}	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetInsertSqlColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
-{{ else }}	_, err := Exec(q.ctx, sql, {{ range .Table.GetInsertSqlColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
+{{ if .Table.HasUpdateReturning }}	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetInsertSQLColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
+{{ else }}	_, err := Exec(q.ctx, sql, {{ range .Table.GetInsertSQLColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
 	if err != nil {
 		return nil, err
 	}
-	return q.FindById({{ range .Table.ColumnIds }}input.{{ .NameNormalized }},{{ end }}){{ end }}
-}
+	return q.FindById({{ range .Table.ColumnIDs }}input.{{ .NameNormalized }},{{ end }}){{ end }}}
 
 // Batch Upsert {{ .Table.NameNormalized }} (create or update if already exist)
 //
@@ -86,10 +84,10 @@ func (q *{{ .Table.NameNormalized }}Queries) Upsert(input {{ .Table.NameNormaliz
 //     // ...
 //   })
 func (q *{{ .Table.NameNormalized }}Queries) UpsertMany(inputs []{{ .Table.NameNormalized }}Update) (requestData []{{ .Table.NameNormalized }}PrimaryKeySerialized, requestErr error) {
-	const sql = `{{ .Table.GetUpsertManySqlContent }}`{{ if .Logger.HasLogger }}
+	const sql = `{{ .Table.GetUpsertManySQLContent }}`{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.UpsertMany", requestErr, time.Since(start), sql, inputs)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.UpsertMany", requestErr, time.Since(start), sql, inputs)
 	}(){{ end }}
 	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
@@ -98,11 +96,12 @@ func (q *{{ .Table.NameNormalized }}Queries) UpsertMany(inputs []{{ .Table.NameN
 			return nil, err
 		}
 
-		if res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
+		res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data);
+		if err != nil {
 			return nil, err
-		} else {
-			ids = append(ids, res...)
 		}
+
+		ids = append(ids, res...)
 	}
 
 	return ids, nil
@@ -115,18 +114,17 @@ func (q *{{ .Table.NameNormalized }}Queries) UpsertMany(inputs []{{ .Table.NameN
 //     // ...
 //   })
 func (q *{{ .Table.NameNormalized }}Queries) Update(input {{ .Table.NameNormalized }}Update) (requestData *{{ .Table.NameNormalized }}Model, requestErr error) {
-	const sql = `{{ .Table.GetUpdateSqlContent }}`{{ if .Logger.HasLogger }}
+	const sql = `{{ .Table.GetUpdateSQLContent }}`{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Update", requestErr, time.Since(start), sql, input)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.Update", requestErr, time.Since(start), sql, input)
 	}(){{ end }}
-{{ if .Table.HasUpdateReturning }}	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetUpdateSqlColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
-{{ else }}	_, err := Exec(q.ctx, sql, {{ range .Table.GetUpdateSqlColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
+{{ if .Table.HasUpdateReturning }}	return QueryOne[{{ .Table.NameNormalized }}Model](q.ctx, sql, {{ range .Table.GetUpdateSQLColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
+{{ else }}	_, err := Exec(q.ctx, sql, {{ range .Table.GetUpdateSQLColumnsSorted }}input.{{ .NameNormalized }}, {{ end }})
 	if err != nil {
 		return nil, err
 	}
-	return q.FindById({{ range .Table.ColumnIds }}input.{{ .NameNormalized }},{{ end }}){{ end }}
-}
+	return q.FindById({{ range .Table.ColumnIDs }}input.{{ .NameNormalized }},{{ end }}){{ end }}}
 
 // Batch Update {{ .Table.NameNormalized }}
 //
@@ -135,10 +133,10 @@ func (q *{{ .Table.NameNormalized }}Queries) Update(input {{ .Table.NameNormaliz
 //     // ...
 //   })
 func (q *{{ .Table.NameNormalized }}Queries) UpdateMany(inputs []{{ .Table.NameNormalized }}Update) (requestData []{{ .Table.NameNormalized }}PrimaryKeySerialized, requestErr error) {
-	const sql = `{{ .Table.GetUpdateManySqlContent }}`{{ if .Logger.HasLogger }}
+	const sql = `{{ .Table.GetUpdateManySQLContent }}`{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.UpdateMany", requestErr, time.Since(start), sql, inputs)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.UpdateMany", requestErr, time.Since(start), sql, inputs)
 	}(){{ end }}
 	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
 	for _, chunk := range chunkBy(inputs, 250) {
@@ -147,25 +145,25 @@ func (q *{{ .Table.NameNormalized }}Queries) UpdateMany(inputs []{{ .Table.NameN
 			return nil, err
 		}
 
-		if res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data); err != nil {
+		res, err := QueryMany[{{ .Table.NameNormalized }}PrimaryKeySerialized](q.ctx, sql, data);
+		if err != nil {
 			return nil, err
-		} else {
-			ids = append(ids, res...)
 		}
+		ids = append(ids, res...)
 	}
 
 	return ids, nil
 }
 
-{{ if .Table.GetDeleteSoftSqlName }}// Delete a {{ .Table.NameNormalized }} (soft delete, data are still in the database)
+{{ if .Table.GetDeleteSoftSQLName }}// Delete a {{ .Table.NameNormalized }} (soft delete, data are still in the database)
 //
 // Usage:
 //   err := db.{{ .Table.NameNormalized }}.DeleteSoft(id)
 func (q *{{ .Table.NameNormalized }}Queries) DeleteSoft(id {{ .Table.NameNormalized }}PrimaryKey) (requestErr error) {
-	sql := `{{ .Table.GetDeleteSoftSqlContent }}`{{ if .Logger.HasLogger }}
+	sql := `{{ .Table.GetDeleteSoftSQLContent }}`{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.DeleteSoft", requestErr, time.Since(start), sql, id)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.DeleteSoft", requestErr, time.Since(start), sql, id)
 	}(){{ end }}
 	_, err := Exec(q.ctx, sql, id)
 	return err
@@ -173,8 +171,8 @@ func (q *{{ .Table.NameNormalized }}Queries) DeleteSoft(id {{ .Table.NameNormali
 
 // Delete a {{ .Table.NameNormalized }} (soft delete, data are still in the database)
 func (q *{{ .Table.NameNormalized }}Model) DeleteSoft(db *DBClient) error {
-   {{ if .Table.HasCompositeId }}return db.{{ .Table.NameNormalized }}.DeleteSoft({{ .Table.NameNormalized }}PrimaryKey{
-		{{ range .Table.ColumnIds }}    {{ .NameNormalized }}: q.{{ .NameNormalized }},
+   {{ if .Table.HasCompositeID }}return db.{{ .Table.NameNormalized }}.DeleteSoft({{ .Table.NameNormalized }}PrimaryKey{
+		{{ range .Table.ColumnIDs }}    {{ .NameNormalized }}: q.{{ .NameNormalized }},
 		{{ end }}
 	}){{ else }}return db.{{ .Table.NameNormalized }}.DeleteSoft(q.Id){{ end }}
 }{{end}}
@@ -184,10 +182,10 @@ func (q *{{ .Table.NameNormalized }}Model) DeleteSoft(db *DBClient) error {
 // Usage:
 //   err := db.{{ .Table.NameNormalized }}.DeleteHard(id)
 func (q *{{ .Table.NameNormalized }}Queries) DeleteHard(id {{ .Table.NameNormalized }}PrimaryKey) (requestErr error) {
-	sql := `{{ .Table.GetDeleteHardSqlContent }}`{{ if .Logger.HasLogger }}
+	sql := `{{ .Table.GetDeleteHardSQLContent }}`{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.DeleteHard", requestErr, time.Since(start), sql, id)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.DeleteHard", requestErr, time.Since(start), sql, id)
 	}(){{ end }}
 	_, err := Exec(q.ctx, sql, id)
 	return err
@@ -195,10 +193,10 @@ func (q *{{ .Table.NameNormalized }}Queries) DeleteHard(id {{ .Table.NameNormali
 
 // Delete a {{ .Table.NameNormalized }} (hard delete, data are removed from the database)
 func (q *{{ .Table.NameNormalized }}Model) DeleteHard(db *DBClient) error {
-	{{ if .Table.HasCompositeId }}return db.{{ .Table.NameNormalized }}.DeleteHard({{ .Table.NameNormalized }}PrimaryKey{
-		{{ range .Table.ColumnIds }}    {{ .NameNormalized }}: q.{{ .NameNormalized }},
+	{{ if .Table.HasCompositeID }}return db.{{ .Table.NameNormalized }}.DeleteHard({{ .Table.NameNormalized }}PrimaryKey{
+		{{ range .Table.ColumnIDs }}    {{ .NameNormalized }}: q.{{ .NameNormalized }},
 		{{ end }}
-	}){{ else }}return db.{{ .Table.NameNormalized }}.DeleteHard({{ range .Table.ColumnIds }}q.{{ .NameNormalized }},{{ end }}){{ end }}
+	}){{ else }}return db.{{ .Table.NameNormalized }}.DeleteHard({{ range .Table.ColumnIDs }}q.{{ .NameNormalized }},{{ end }}){{ end }}
 }
 
 // Count {{ .Table.NameNormalized }} records based on filter conditions
@@ -219,7 +217,7 @@ func (q *{{ .Table.NameNormalized }}Queries) Count(filters ...WhereCondition) (r
 	}{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.Count", requestErr, time.Since(start), sql, args)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.Count", requestErr, time.Since(start), sql, args...)
 	}(){{ end }}
 
 	var count int
@@ -245,7 +243,7 @@ func (q *{{ .Table.NameNormalized }}Queries) FindMany(filters ...WhereCondition)
 	}{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
-		q.ctx.logQuery(Debug, "DB.{{ .Table.NameNormalized }}.FindMany", requestErr, time.Since(start), sql, args)
+		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.FindMany", requestErr, time.Since(start), sql, args...)
 	}(){{ end }}
 
 	return QueryMany[{{ .Table.NameNormalized }}Model](q.ctx, sql, args...)
@@ -262,14 +260,14 @@ func (q *{{ .Table.NameNormalized }}Queries) FindUnique(filters ...WhereConditio
 	return first(q.FindMany(filters...))
 }
 
-{{ range .Table.GetSelectPrimarySql }}
+{{ range .Table.GetSelectPrimarySQL }}
 // Find {{ .Name }} By PrimaryKey
 //
 // Usage:
 //   entity, err := db.{{ .Name }}.{{ .Method }}(id)
 func (q *{{ .Name }}Queries) {{ .Method }}(id {{ .Name }}PrimaryKey) (*{{ .Name }}Model, error) {
 	return q.FindUnique(func(cond SelectBuilder) SelectBuilder {
-		{{ if $.Table.HasCompositeId }}return cond{{ range $i, $f := .Fields }}.Where("{{ $f.Name }} = ${{ len (printf "a%*s" $i "") }}", id.{{ $f.NameNormalized }}){{ end }}
+		{{ if $.Table.HasCompositeID }}return cond{{ range $i, $f := .Fields }}.Where("{{ $f.Name }} = ${{ len (printf "a%*s" $i "") }}", id.{{ $f.NameNormalized }}){{ end }}
 		{{ else }}return cond{{ range .Fields }}.Where("{{ .Name }} = ?", id){{ end }}{{ end }}
 	})
 }

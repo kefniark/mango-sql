@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"github.com/sirupsen/logrus/hooks/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //go:generate go run ../../../cmd/mangosql/ --output ./client.go --package logruslogger --logger logrus ./schema.sql
@@ -38,25 +39,25 @@ func newTestDB(t *testing.T) (*DBClient, func(), *test.Hook) {
 }
 
 func TestInsert(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	user, err := db.User.Insert(UserCreate{
 		Id:   1,
 		Name: "tuna",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.Equal(t, "tuna", user.Name)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 1, len(entries))
-	assert.Equal(t, entries[0].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[0].Message, "DB.User.Insert")
+	assert.Len(t, entries, 1)
+	assert.Equal(t, logrus.DebugLevel, entries[0].Level)
+	assert.Equal(t, "DB.User.Insert", entries[0].Message)
 }
 
 func TestInsertMany(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.User.InsertMany([]UserCreate{
 		{
@@ -68,130 +69,130 @@ func TestInsertMany(t *testing.T) {
 			Name: "salmon",
 		},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 1, len(entries))
-	assert.Equal(t, entries[0].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[0].Message, "DB.User.InsertMany")
+	assert.Len(t, entries, 1)
+	assert.Equal(t, logrus.DebugLevel, entries[0].Level)
+	assert.Equal(t, "DB.User.InsertMany", entries[0].Message)
 }
 
 func TestUpdate(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.User.Insert(UserCreate{Id: 1, Name: "user1"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = db.User.Update(UserUpdate{Id: 1, Name: "user1-updated"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 2, len(entries))
-	assert.Equal(t, entries[1].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[1].Message, "DB.User.Update")
+	assert.Len(t, entries, 2)
+	assert.Equal(t, logrus.DebugLevel, entries[1].Level)
+	assert.Equal(t, "DB.User.Update", entries[1].Message)
 }
 
 func TestUpsert(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.User.Upsert(UserUpdate{Id: 1, Name: "usernew"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, err = db.User.Upsert(UserUpdate{Id: 1, Name: "user1-updated"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 2, len(entries))
-	assert.Equal(t, entries[1].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[1].Message, "DB.User.Upsert")
+	assert.Len(t, entries, 2)
+	assert.Equal(t, logrus.DebugLevel, entries[1].Level)
+	assert.Equal(t, "DB.User.Upsert", entries[1].Message)
 }
 
 func TestSoftDelete(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.User.Insert(UserCreate{Id: 2, Name: "user2"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = db.User.DeleteSoft(2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 2, len(entries))
-	assert.Equal(t, entries[1].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[1].Message, "DB.User.DeleteSoft")
+	assert.Len(t, entries, 2)
+	assert.Equal(t, logrus.DebugLevel, entries[1].Level)
+	assert.Equal(t, "DB.User.DeleteSoft", entries[1].Message)
 }
 
 func TestHardDelete(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.User.Insert(UserCreate{Id: 2, Name: "user2"})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	err = db.User.DeleteHard(2)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 2, len(entries))
-	assert.Equal(t, entries[1].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[1].Message, "DB.User.DeleteHard")
+	assert.Len(t, entries, 2)
+	assert.Equal(t, logrus.DebugLevel, entries[1].Level)
+	assert.Equal(t, "DB.User.DeleteHard", entries[1].Message)
 }
 
 func TestFindMany(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.User.FindMany()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 1, len(entries))
-	assert.Equal(t, entries[0].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[0].Message, "DB.User.FindMany")
+	assert.Len(t, entries, 1)
+	assert.Equal(t, logrus.DebugLevel, entries[0].Level)
+	assert.Equal(t, "DB.User.FindMany", entries[0].Message)
 }
 
 func TestCount(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.User.Count()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 1, len(entries))
-	assert.Equal(t, entries[0].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[0].Message, "DB.User.Count")
+	assert.Len(t, entries, 1)
+	assert.Equal(t, logrus.DebugLevel, entries[0].Level)
+	assert.Equal(t, "DB.User.Count", entries[0].Message)
 }
 
 func TestFindManyError(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.User.FindMany(
 		func(query SelectBuilder) SelectBuilder {
 			return query.Where("unknownField = 'error'")
 		},
 	)
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 1, len(entries))
-	assert.Equal(t, entries[0].Level, logrus.ErrorLevel)
-	assert.Equal(t, entries[0].Message, "DB.User.FindMany")
+	assert.Len(t, entries, 1)
+	assert.Equal(t, logrus.ErrorLevel, entries[0].Level)
+	assert.Equal(t, "DB.User.FindMany", entries[0].Message)
 }
 
 func TestCustomQuery(t *testing.T) {
-	db, close, logs := newTestDB(t)
-	defer close()
+	db, closeDB, logs := newTestDB(t)
+	defer closeDB()
 
 	_, err := db.Queries.UserNotDeleted()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	entries := logs.AllEntries()
-	assert.Equal(t, 1, len(entries))
-	assert.Equal(t, entries[0].Level, logrus.DebugLevel)
-	assert.Equal(t, entries[0].Message, "DB.Queries.UserNotDeleted")
+	assert.Len(t, entries, 1)
+	assert.Equal(t, logrus.DebugLevel, entries[0].Level)
+	assert.Equal(t, "DB.Queries.UserNotDeleted", entries[0].Message)
 }

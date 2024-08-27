@@ -10,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kefniark/mango-sql/tests/helpers"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //go:generate go run ../../../cmd/mangosql/ --output client.go --package types --logger console ./schema.sql
@@ -35,8 +36,8 @@ func newTestDB(t *testing.T) (*DBClient, func()) {
 }
 
 func TestNumeric(t *testing.T) {
-	db, close := newTestDB(t)
-	defer close()
+	db, closeDB := newTestDB(t)
+	defer closeDB()
 
 	num, err := db.Numeric.Insert(NumericCreate{
 		Smallserial: 1,
@@ -48,14 +49,13 @@ func TestNumeric(t *testing.T) {
 		Numeric:     7.5,
 		Float:       8.5,
 	})
-	assert.NoError(t, err)
-
-	fmt.Println(num)
+	require.NoError(t, err)
+	assert.Equal(t, int64(2), num.Serial)
 }
 
 func TestText(t *testing.T) {
-	db, close := newTestDB(t)
-	defer close()
+	db, closeDB := newTestDB(t)
+	defer closeDB()
 
 	value := "Hello world&-_+@"
 
@@ -67,7 +67,7 @@ func TestText(t *testing.T) {
 		Text:     value,
 		Text2:    value,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, "a", num.Char1)
 	assert.Equal(t, "b", strings.TrimSpace(num.Char2))
@@ -78,8 +78,8 @@ func TestText(t *testing.T) {
 }
 
 func TestArray(t *testing.T) {
-	db, close := newTestDB(t)
-	defer close()
+	db, closeDB := newTestDB(t)
+	defer closeDB()
 
 	list, err := db.List.Insert(ListCreate{
 		Integer1:  []int64{1, 2, 3},
@@ -91,14 +91,14 @@ func TestArray(t *testing.T) {
 		Text1:     []string{"a", "b", "c"},
 		Text2:     &[]string{"d", "e", "f"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	fmt.Println(list)
 }
 
 func TestJSON(t *testing.T) {
-	db, close := newTestDB(t)
-	defer close()
+	db, closeDB := newTestDB(t)
+	defer closeDB()
 
 	data := map[string]interface{}{"a": 1.0, "b": 2.5}
 
@@ -106,7 +106,7 @@ func TestJSON(t *testing.T) {
 		Json1:  data,
 		Jsonb1: data,
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	assert.EqualValues(t, data, val.Json1)
 	assert.EqualValues(t, data, val.Jsonb1)
 }

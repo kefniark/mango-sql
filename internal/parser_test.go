@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestParseTableCreate(t *testing.T) {
@@ -13,22 +14,22 @@ func TestParseTableCreate(t *testing.T) {
 		name        text  NOT NULL
 	);
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// table
-	assert.Equal(t, 1, len(schema.Tables))
+	assert.Len(t, schema.Tables, 1)
 	assert.Equal(t, "orders", schema.Tables["orders"].Name)
 
 	// columns
-	assert.Equal(t, 2, len(schema.Tables["orders"].Columns))
+	assert.Len(t, schema.Tables["orders"].Columns, 2)
 	assert.Equal(t, "id", schema.Tables["orders"].Columns["id"].Name)
 	assert.Equal(t, "uuid", schema.Tables["orders"].Columns["id"].Type)
 	assert.Equal(t, "name", schema.Tables["orders"].Columns["name"].Name)
 	assert.Equal(t, "string", schema.Tables["orders"].Columns["name"].Type)
 
 	// primary index
-	assert.Equal(t, 1, len(schema.Tables["orders"].Constraints))
-	assert.Equal(t, 1, len(schema.Tables["orders"].Indexes))
+	assert.Len(t, schema.Tables["orders"].Constraints, 1)
+	assert.Len(t, schema.Tables["orders"].Indexes, 1)
 }
 
 func TestParseUnique(t *testing.T) {
@@ -38,9 +39,9 @@ func TestParseUnique(t *testing.T) {
 		name        text  NOT NULL UNIQUE
 	);
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(schema.Tables))
+	assert.Len(t, schema.Tables, 1)
 
 	assert.Equal(t, "UNIQUE", schema.Tables["orders"].Constraints[1].Type)
 	assert.Equal(t, "name", schema.Tables["orders"].Constraints[1].Columns[0])
@@ -54,9 +55,9 @@ func TestParseUniqueMulti(t *testing.T) {
 		UNIQUE(id, name)
 	);
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(schema.Tables))
+	assert.Len(t, schema.Tables, 1)
 
 	assert.Equal(t, "UNIQUE", schema.Tables["orders"].Constraints[1].Type)
 	assert.Equal(t, "id", schema.Tables["orders"].Constraints[1].Columns[0])
@@ -72,9 +73,9 @@ func TestParseUniqueAlter(t *testing.T) {
 
 	ALTER TABLE orders ADD CONSTRAINT fk_order_id UNIQUE (id, name);
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(schema.Tables))
+	assert.Len(t, schema.Tables, 1)
 
 	assert.Equal(t, "UNIQUE", schema.Tables["orders"].Constraints[1].Type)
 	assert.Equal(t, "id", schema.Tables["orders"].Constraints[1].Columns[0])
@@ -91,10 +92,10 @@ func TestParseUniqueDrop(t *testing.T) {
 	ALTER TABLE orders ADD CONSTRAINT fk_order_id UNIQUE (id, name);
 	ALTER TABLE orders DROP CONSTRAINT fk_order_id;
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(schema.Tables))
-	assert.Equal(t, 1, len(schema.Tables["orders"].Constraints))
+	assert.Len(t, schema.Tables, 1)
+	assert.Len(t, schema.Tables["orders"].Constraints, 1)
 }
 
 func TestParseRef(t *testing.T) {
@@ -110,10 +111,10 @@ func TestParseRef(t *testing.T) {
 		order_id	UUID REFERENCES orders(id)
 	);
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(schema.Tables))
-	assert.Equal(t, 1, len(schema.Tables["orders_items"].References))
+	assert.Len(t, schema.Tables, 2)
+	assert.Len(t, schema.Tables["orders_items"].References, 1)
 
 	assert.Equal(t, "order_id", schema.Tables["orders_items"].References[0].Columns[0])
 	assert.Equal(t, "orders", schema.Tables["orders_items"].References[0].Table)
@@ -135,10 +136,10 @@ func TestParseAlterRef(t *testing.T) {
 
 	ALTER TABLE orders_items ADD CONSTRAINT fk_order_id FOREIGN KEY (order_id) REFERENCES orders(id);
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 2, len(schema.Tables))
-	assert.Equal(t, 1, len(schema.Tables["orders_items"].References))
+	assert.Len(t, schema.Tables, 2)
+	assert.Len(t, schema.Tables["orders_items"].References, 1)
 	assert.Equal(t, "order_id", schema.Tables["orders_items"].References[0].Columns[0])
 	assert.Equal(t, "orders", schema.Tables["orders_items"].References[0].Table)
 	assert.Equal(t, "id", schema.Tables["orders_items"].References[0].TableColumns[0])
@@ -153,9 +154,9 @@ func TestParseTableRename(t *testing.T) {
 
 	ALTER TABLE orders RENAME TO new_orders;
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(schema.Tables))
+	assert.Len(t, schema.Tables, 1)
 	assert.NotNil(t, schema.Tables["new_orders"].Columns["name"])
 }
 
@@ -168,9 +169,9 @@ func TestParseTableDrop(t *testing.T) {
 
 	DROP TABLE orders;
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 0, len(schema.Tables))
+	assert.Empty(t, schema.Tables)
 }
 
 func TestParseAlterTableColumnAdd(t *testing.T) {
@@ -182,7 +183,7 @@ func TestParseAlterTableColumnAdd(t *testing.T) {
 
 	ALTER TABLE orders ADD COLUMN created_at TIMESTAMP;
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// column
 	assert.NotNil(t, schema.Tables["orders"].Columns["created_at"])
@@ -200,7 +201,7 @@ func TestParseAlterTableColumnType(t *testing.T) {
 
 	ALTER TABLE orders ALTER COLUMN name TYPE VARCHAR(255);
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// column
 	assert.Equal(t, "name", schema.Tables["orders"].Columns["name"].Name)
@@ -216,7 +217,7 @@ func TestParseAlterTableColumnRename(t *testing.T) {
 
 	ALTER TABLE orders RENAME COLUMN name TO new_name;
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// column
 	assert.Nil(t, schema.Tables["orders"].Columns["name"])
@@ -233,8 +234,8 @@ func TestParseAlterColumnDrop(t *testing.T) {
 
 	ALTER TABLE orders DROP COLUMN name;
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, 1, len(schema.Tables["orders"].Columns))
+	assert.Len(t, schema.Tables["orders"].Columns, 1)
 	assert.Nil(t, schema.Tables["orders"].Columns["name"])
 }

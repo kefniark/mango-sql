@@ -2,35 +2,35 @@
 
 var {{ .Table.NameNormalized }}Fields = []string{ {{ range .Table.Columns }} "{{ .Name }}",{{ end }} }
 
-{{ if .Table.HasCompositeId }}
+{{ if .Table.HasCompositeID }}
 type {{ .Table.NameNormalized }}PrimaryKey struct {
-{{ range .Table.ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ range .Table.ColumnIDs }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJSON }}" db:"{{ .Name }}"`
 {{ end }}
 }
 type {{ .Table.NameNormalized }}PrimaryKeySerialized = {{ .Table.NameNormalized }}PrimaryKey
 {{ else }}
-type {{ .Table.NameNormalized }}PrimaryKey = {{ (index .Table.ColumnIds 0).Type }}
+type {{ .Table.NameNormalized }}PrimaryKey = {{ (index .Table.ColumnIDs 0).Type }}
 type {{ .Table.NameNormalized }}PrimaryKeySerialized struct {
-{{ range .Table.ColumnIds }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ range .Table.ColumnIDs }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJSON }}" db:"{{ .Name }}"`
 {{ end }}
 }
 {{ end }}
 
 type {{ .Table.NameNormalized }}Model struct {
-{{ range .Table.Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ range .Table.Columns }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJSON }}" db:"{{ .Name }}"`
 {{ end }}}
 
 type {{ .Table.NameNormalized }}Create struct {
-{{ if not .Table.HasCompositeId }}
-{{ range .Table.ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ if not .Table.HasCompositeID }}
+{{ range .Table.ColumnsCreate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJSON }}" db:"{{ .Name }}"`
 {{ end }}
 {{ else }}
-{{ range .Table.ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ range .Table.ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJSON }}" db:"{{ .Name }}"`
 {{ end }}
 {{ end }}}
 
 type {{ .Table.NameNormalized }}Update struct {
-{{ range .Table.ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .Name }}"`
+{{ range .Table.ColumnsUpdate }}    {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJSON }}" db:"{{ .Name }}"`
 {{ end }}}
 
 type {{ .Table.NameNormalized }}Queries struct {

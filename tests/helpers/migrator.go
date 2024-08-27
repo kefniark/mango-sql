@@ -22,7 +22,7 @@ func (s *SchemaMigrator) Prepare(context.Context, *sql.DB, pgtestdb.Config) erro
 	return nil
 }
 
-func (s *SchemaMigrator) Migrate(ctx context.Context, db *sql.DB, config pgtestdb.Config) error {
+func (s *SchemaMigrator) Migrate(_ context.Context, db *sql.DB, _ pgtestdb.Config) error {
 	_, err := db.Exec(string(s.Data))
 	return err
 }

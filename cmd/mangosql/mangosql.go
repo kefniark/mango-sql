@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"go/format"
 	"os"
@@ -17,7 +18,7 @@ import (
 	"github.com/urfave/cli/v2"
 )
 
-var (
+const (
 	version = "dev"
 	commit  = "none"
 	date    = "unknown"
@@ -66,19 +67,19 @@ Example: mangosql --output db/file.go db/schema.sql`,
 		},
 		Action: func(ctx *cli.Context) error {
 			if ctx.NArg() <= 0 {
-				return fmt.Errorf("missing source folder")
+				return errors.New("missing source folder")
 			}
 
-			allowed_drivers := []string{"pq", "pgx", "sqlite", "mysql", "mariadb"}
+			allowedDrivers := []string{"pq", "pgx", "sqlite", "mysql", "mariadb"}
 			driver := ctx.String("driver")
-			if !slices.Contains(allowed_drivers, driver) {
-				return fmt.Errorf("unknown driver, should be one of %v", allowed_drivers)
+			if !slices.Contains(allowedDrivers, driver) {
+				return fmt.Errorf("unknown driver, should be one of %v", allowedDrivers)
 			}
 
-			allowed_logger := []string{"none", "zap", "logrus", "zerolog", "console"}
+			allowedLoggers := []string{"none", "zap", "logrus", "zerolog", "console"}
 			logger := ctx.String("logger")
-			if !slices.Contains(allowed_logger, logger) {
-				return fmt.Errorf("unknown logger, should be one of %v", allowed_logger)
+			if !slices.Contains(allowedLoggers, logger) {
+				return fmt.Errorf("unknown logger, should be one of %v", allowedLoggers)
 			}
 
 			name := ctx.Args().Get(0)
@@ -116,7 +117,7 @@ func generate(opts GenerateOptions) error {
 
 	var sql string
 	var queriesFilePath string
-	var queriesSql string
+	var queriesSQL string
 	if stat.IsDir() {
 		sql = parseMigrationFolder(opts.Src)
 
@@ -141,8 +142,8 @@ func generate(opts GenerateOptions) error {
 		if err != nil {
 			return err
 		}
-		queriesSql = string(data)
-		err = internal.ParseQueries(schema, queriesSql)
+		queriesSQL = string(data)
+		err = internal.ParseQueries(schema, queriesSQL)
 		if err != nil {
 			return err
 		}
@@ -185,7 +186,7 @@ func generate(opts GenerateOptions) error {
 
 	defer f.Close()
 
-	_, err = f.WriteString(string(formatted))
+	_, err = f.Write(formatted)
 	if path, err := filepath.Abs(path.Join(folder, file)); err == nil {
 		fmt.Printf("Generated %s\n", path)
 	}

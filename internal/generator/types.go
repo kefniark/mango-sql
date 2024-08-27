@@ -52,8 +52,8 @@ func getColumnType(column *core.SQLColumn) string {
 	newType := "string"
 	if val, ok := postgresType[fieldType+fieldAccuracy]; ok {
 		newType = val
-	} else if val, ok := postgresType[fieldType]; ok {
-		newType = val
+	} else if val2, ok2 := postgresType[fieldType]; ok2 {
+		newType = val2
 	} else {
 		fmt.Println("Unknown type", column.Name, column.Table, column.Type)
 	}

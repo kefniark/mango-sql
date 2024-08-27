@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/kefniark/mango-sql/tests/helpers"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //go:generate go run ../../../cmd/mangosql/ --output client.go --package autoincrement --logger console ./schema.sql
@@ -34,8 +35,8 @@ func newTestDB(t *testing.T) (*DBClient, func()) {
 }
 
 func TestAutoIncrement(t *testing.T) {
-	db, close := newTestDB(t)
-	defer close()
+	db, closeDB := newTestDB(t)
+	defer closeDB()
 
 	input := CompanyCreate{
 		Name:    "BobCorp",
@@ -45,10 +46,10 @@ func TestAutoIncrement(t *testing.T) {
 	}
 
 	company, err := db.Company.Insert(input)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, strings.TrimSpace(company.Name), input.Name)
 	assert.Equal(t, company.Age, input.Age)
 	assert.Equal(t, strings.TrimSpace(company.Address), input.Address)
-	assert.Equal(t, company.Salary, input.Salary)
+	assert.InEpsilon(t, company.Salary, input.Salary, 0.001)
 }

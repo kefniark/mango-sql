@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/kefniark/mango-sql/tests/helpers"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 //go:generate go run ../../../cmd/mangosql/ --output client.go --package composite --logger console ./schema.sql
@@ -33,18 +34,18 @@ func newTestDB(t *testing.T) (*DBClient, func()) {
 }
 
 func TestComposite(t *testing.T) {
-	db, close := newTestDB(t)
-	defer close()
+	db, closeDB := newTestDB(t)
+	defer closeDB()
 
 	tag1, err := db.Tag.Insert(TagCreate{
 		QuestionId: 1,
 		TagId:      1,
 		Name:       "Tuna",
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	tag2, err := db.Tag.FindById(TagPrimaryKey{QuestionId: 1, TagId: 1})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	assert.Equal(t, tag1.Name, tag2.Name)
 }

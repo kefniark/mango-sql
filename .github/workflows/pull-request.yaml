@@ -20,5 +20,27 @@ jobs:
           authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
       - name: Install devenv.sh
         run: nix profile install nixpkgs#devenv
-      - name: Build the devenv shell and run any pre-commit hooks
-        run: devenv test
+      - name: Run Test
+        shell: devenv shell bash -- -e {0}
+        run: |
+          just generate
+          just test
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v27
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: cachix/cachix-action@v15
+        with:
+          name: mangosql
+          authToken: "${{ secrets.CACHIX_AUTH_TOKEN }}"
+      - name: Install devenv.sh
+        run: nix profile install nixpkgs#devenv
+      - name: Run Lint
+        shell: devenv shell bash -- -e {0}
+        run: |
+          just generate
+          just lint

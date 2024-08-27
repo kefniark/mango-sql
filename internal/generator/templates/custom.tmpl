@@ -26,14 +26,14 @@ type CustomQueries struct {
         }{{ if $.Logger.HasLogger }}
         start := time.Now()
         defer func() {
-            q.ctx.logQuery(Debug, "DB.Queries.{{ .NameNormalized }}", requestErr, time.Since(start), sql, args)
+            q.ctx.logQuery("DB.Queries.{{ .NameNormalized }}", requestErr, time.Since(start), sql, args...)
         }(){{ end }}
 
         return QueryMany[{{ .NameNormalized }}Model](q.ctx, sql, args...)
     }
 
     type {{ .NameNormalized }}Model struct {
-{{ range .Fields }}     {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJson }}" db:"{{ .NameJson }}"`
+{{ range .Fields }}     {{ .NameNormalized }} {{ .Type }} `json:"{{ .NameJSON }}" db:"{{ .NameJSON }}"`
 {{ end }}
     }
 {{ end }}

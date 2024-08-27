@@ -7,7 +7,7 @@ import (
 )
 
 // The parser used has some limitation (based on cockroachDB syntax),
-// The preparser is there to normalize the input and avoid a set of known errors
+// The preparser is there to normalize the input and avoid a set of known errors.
 var alter = []func(string) string{
 	removeTrigger,
 	removeCustomTypes,
