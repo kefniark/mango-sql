@@ -34,6 +34,7 @@ export default defineConfig({
         text: 'Advanced Features',
         items: [
           // { text: 'UUID Generation', link: '/api/mutations' },
+          { text: 'ERD Diagram', link: '/features/diagram' },
           { text: 'Logging', link: '/features/logging' },
           { text: 'Soft Delete', link: '/features/soft-delete' },
           // { text: 'Migrations', link: '/api/mutations' },
