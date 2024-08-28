@@ -58,7 +58,7 @@ func ParseSchema(sql string) (*core.SQLSchema, error) {
 	sql = normalize(sql)
 	stmts, err := parser.Parse(sql)
 	if err != nil {
-		return nil, fmt.Errorf("schema parsing error: %w", err)
+		return nil, err
 	}
 
 	schema := &core.SQLSchema{

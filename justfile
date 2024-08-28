@@ -16,6 +16,11 @@ generate:
     go mod download
     go generate ./tests/...
 
+generate_docs:
+    go run ./cmd/mangosql/ diagram --output ./docs/public/blog.svg ./tests/diagram/blog.sql
+    go run ./cmd/mangosql/ diagram --output ./docs/public/blog_dark.svg -s -d -t "My wonderful Blog" -m "Version: 1.0.2" ./tests/diagram/blog.sql
+    go run ./cmd/mangosql/ diagram --output ./docs/public/blog_simple.svg -s -t "" ./tests/diagram/blog.sql
+
 bench:
     CGO_ENABLED=0 go test -bench=. -benchmem ./tests/bench | tee bench.log
     go run ./cmd/bench/
