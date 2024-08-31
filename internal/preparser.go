@@ -98,7 +98,7 @@ func removeComments(sql string) string {
 }
 
 func replaceMysqlDateTypes(sql string) string {
-	regCond := regexp.MustCompile(`(?i) (datetime|date|timestamp)(\(\d*\))?`)
+	regCond := regexp.MustCompile(`(?i)\s(datetime|date|timestamp)(\(\d*\))?`)
 	matches := regCond.FindAllStringSubmatchIndex(sql, -1)
 	slices.Reverse(matches)
 	for _, match := range matches {
@@ -111,7 +111,7 @@ func replaceMysqlDateTypes(sql string) string {
 func replaceMysqlIntTypes(sql string) string {
 	sql = strings.ReplaceAll(sql, " unsigned ", " ")
 
-	regCond := regexp.MustCompile(`(?i) (integer|smallint|tinyint|bigint|int)(\(\d*\))?`)
+	regCond := regexp.MustCompile(`(?i)\s(integer|smallint|tinyint|bigint|int)(\(\d*\))?`)
 	matches := regCond.FindAllStringSubmatchIndex(sql, -1)
 	slices.Reverse(matches)
 	for _, match := range matches {
@@ -122,7 +122,7 @@ func replaceMysqlIntTypes(sql string) string {
 }
 
 func replaceMysqlFloatTypes(sql string) string {
-	regCond := regexp.MustCompile(`(?i) (double|float)(\(\d*\))?`)
+	regCond := regexp.MustCompile(`(?i)\s(double precision|double|float)(\(\d*\))?`)
 	matches := regCond.FindAllStringSubmatchIndex(sql, -1)
 	slices.Reverse(matches)
 	for _, match := range matches {
@@ -133,10 +133,17 @@ func replaceMysqlFloatTypes(sql string) string {
 }
 
 func replaceMysqlTextTypes(sql string) string {
-	regCond := regexp.MustCompile(`(?i) (enum|mediumtext|longtext|tinytext|nvarchar|character varying|char|set)(\(.*?\))?`)
+	regCond := regexp.MustCompile(`(?i)\s(mediumtext|longtext|tinytext|nvarchar|character varying|character|char)(\(.*?\))?`)
 	matches := regCond.FindAllStringSubmatchIndex(sql, -1)
 	slices.Reverse(matches)
 	for _, match := range matches {
+		sql = sql[:match[0]] + " text" + sql[match[1]:]
+	}
+
+	regEnums := regexp.MustCompile(`(?i)\s(enum|set)(\(.*?\))`)
+	matchesEnums := regEnums.FindAllStringSubmatchIndex(sql, -1)
+	slices.Reverse(matchesEnums)
+	for _, match := range matchesEnums {
 		sql = sql[:match[0]] + " text" + sql[match[1]:]
 	}
 
@@ -144,7 +151,7 @@ func replaceMysqlTextTypes(sql string) string {
 }
 
 func replaceMysqlDataTypes(sql string) string {
-	regCond := regexp.MustCompile(`(?i) (binary|longblob|mediumblob|tinyblob|blob|tsvector)(\(\d*\))?`)
+	regCond := regexp.MustCompile(`(?i)\s(binary|longblob|mediumblob|tinyblob|blob|tsvector)(\(\d*\))?`)
 	matches := regCond.FindAllStringSubmatchIndex(sql, -1)
 	slices.Reverse(matches)
 	for _, match := range matches {
@@ -155,7 +162,7 @@ func replaceMysqlDataTypes(sql string) string {
 }
 
 func replaceMysqlUpdate(sql string) string {
-	regCond := regexp.MustCompile(`(?i) ON (DELETE|UPDATE) SET .*`)
+	regCond := regexp.MustCompile(`(?i)\sON\s(DELETE|UPDATE)\sSET\s\w*`)
 	matches := regCond.FindAllStringSubmatchIndex(sql, -1)
 	slices.Reverse(matches)
 	for _, match := range matches {
@@ -166,11 +173,18 @@ func replaceMysqlUpdate(sql string) string {
 }
 
 func replaceMysqlChartset(sql string) string {
-	regCond := regexp.MustCompile(`(?i) ((CHARACTER SET|COLLATE|DEFAULT CHARSET|CHARTSET|ENGINE|AUTO_INCREMENT|COMMENT)[ =]('.*?'|.*))[,; ]`)
+	regCond := regexp.MustCompile(`(?i)\s((CHARACTER SET|COLLATE|DEFAULT CHARSET|CHARTSET|ENGINE|AUTO_INCREMENT)[ =]('.*'|.*))[,; ]`)
 	matches := regCond.FindAllStringSubmatchIndex(sql, -1)
 	slices.Reverse(matches)
 	for _, match := range matches {
 		sql = sql[:match[2]] + " " + sql[match[3]:]
+	}
+
+	regComment := regexp.MustCompile(`(?i)\sCOMMENT\s'.*'`)
+	matchesComment := regComment.FindAllStringSubmatchIndex(sql, -1)
+	slices.Reverse(matchesComment)
+	for _, match := range matchesComment {
+		sql = sql[:match[0]] + " " + sql[match[1]:]
 	}
 
 	return sql
@@ -250,11 +264,11 @@ func filterValidOperations(sql string) string {
 
 		for _, res := range res {
 			txt := sql[res[0]:res[1]]
-			if strings.Contains(txt, "OWNER TO") {
+			if strings.Contains(strings.ToLower(txt), "owner to") {
 				continue
 			}
 
-			if strings.Contains(txt, "to_tsvector") {
+			if strings.Contains(strings.ToLower(txt), "to_tsvector") {
 				continue
 			}
 

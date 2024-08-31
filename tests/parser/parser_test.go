@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/kefniark/mango-sql/internal"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMysql(t *testing.T) {
@@ -20,12 +20,12 @@ func TestMysql(t *testing.T) {
 		t.Run(entry.Name(), func(t *testing.T) {
 			data, err := os.ReadFile(path.Join(folder, entry.Name(), "schema.sql"))
 			if err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			_, err = internal.ParseSchema(string(data))
 			if err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}
@@ -42,12 +42,12 @@ func TestPostgres(t *testing.T) {
 		t.Run(entry.Name(), func(t *testing.T) {
 			data, err := os.ReadFile(path.Join(folder, entry.Name(), "schema.sql"))
 			if err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 
 			_, err = internal.ParseSchema(string(data))
 			if err != nil {
-				assert.NoError(t, err)
+				require.NoError(t, err)
 			}
 		})
 	}

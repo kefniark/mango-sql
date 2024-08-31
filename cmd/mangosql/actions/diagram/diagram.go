@@ -103,6 +103,7 @@ func diagram(opts diagramOptions) error {
 	// parse schema
 	schema, err := internal.ParseSchema(sql)
 	if err != nil {
+		fmt.Printf("schema parsing error: %+v\n", err)
 		return err
 	}
 
