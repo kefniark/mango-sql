@@ -61,15 +61,3 @@ jobs:
         run: |
           just generate
           just lint
-
-  code_coverage:
-    name: "Code coverage report"
-    if: github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
-    needs: test
-    steps:
-      - uses: fgrosse/go-coverage-report@v1.1.1
-        continue-on-error: true
-        with:
-          coverage-artifact-name: "code-coverage"
-          coverage-file-name: "coverage.txt"
