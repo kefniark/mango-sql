@@ -276,6 +276,11 @@ func renderColumn(t *core.SQLTable, columns map[string]*core.SQLColumn, writer *
 			if err != nil {
 				continue
 			}
+		} else {
+			_, err := writer.WriteString(fmt.Sprintf("	%s: %s\n", c.Name, ""))
+			if err != nil {
+				continue
+			}
 		}
 	}
 }
