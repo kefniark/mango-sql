@@ -103,6 +103,7 @@ func diagram(opts diagramOptions) error {
 	// parse schema
 	schema, err := internal.ParseSchema(sql)
 	if err != nil {
+		fmt.Printf("schema parsing error: %+v\n", err)
 		return err
 	}
 
@@ -272,6 +273,11 @@ func renderColumn(t *core.SQLTable, columns map[string]*core.SQLColumn, writer *
 
 		if slices.Contains(refs, c.Name) {
 			_, err := writer.WriteString(fmt.Sprintf("	%s: %s%s\n", c.Name, typeName(c.Type), meta))
+			if err != nil {
+				continue
+			}
+		} else {
+			_, err := writer.WriteString(fmt.Sprintf("	%s: %s\n", c.Name, ""))
 			if err != nil {
 				continue
 			}
