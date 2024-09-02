@@ -2,7 +2,6 @@ package internal
 
 import (
 	"cmp"
-	"fmt"
 	"regexp"
 	"slices"
 	"strings"
@@ -119,6 +118,7 @@ type TableContent struct {
 type TableField struct {
 	Name      string
 	Type      string
+	Ref       string
 	VarStart  int
 	VarEnd    int
 	TypeStart int
@@ -172,7 +172,11 @@ func findFields(table string, offset int) []TableField {
 		}
 
 		if string(char) == "," || pos == len(table)-1 {
-			line := table[from:pos]
+			line := table[from : pos+1]
+			if string(char) == "," || string(char) == ";" {
+				line = table[from:pos]
+			}
+
 			clean := strings.ToLower(strings.TrimSpace(line))
 			if strings.HasPrefix(clean, "primary") || strings.HasPrefix(clean, "constraint") || strings.HasPrefix(clean, "unique") || strings.HasPrefix(clean, "foreign") || strings.HasPrefix(clean, "key") {
 				from = pos + 1
@@ -187,11 +191,13 @@ func findFields(table string, offset int) []TableField {
 			data := TableField{
 				Name:      varname,
 				Type:      vartype,
+				Ref:       "",
 				VarStart:  offset + start,
 				VarEnd:    offset + start + len(varname),
 				TypeStart: offset + start + len(varname) + 1,
 				TypeEnd:   offset + from + len(line),
 			}
+			data.Type, data.Ref = splitTypeRef(data.Type)
 
 			fields = append(fields, data)
 			from = pos + 1
@@ -199,6 +205,22 @@ func findFields(table string, offset int) []TableField {
 	}
 
 	return fields
+}
+
+func splitTypeRef(sql string) (string, string) {
+	ref := -1
+	if r := strings.Index(strings.ToLower(sql), " references "); r > -1 {
+		ref = r
+	}
+	if r := strings.Index(strings.ToLower(sql), " foreign key "); r > -1 && r < ref {
+		ref = r
+	}
+
+	if ref > -1 {
+		return sql[:ref], sql[ref:]
+	}
+
+	return sql, ""
 }
 
 func replaceMysqlTypes(sql string) string {
@@ -217,16 +239,17 @@ func replaceMysqlTypes(sql string) string {
 			vartype = replaceMysqlFloatTypes(vartype)
 			vartype = replaceMysqlTextTypes(vartype)
 			vartype = replaceMysqlDataTypes(vartype)
+			vartype = replaceMysqlDataSubtypes(vartype)
 			vartype = replaceMysqlDateTypes(vartype)
 			vartype = replaceMysqlEnumTypes(vartype)
 			vartype = replaceMysqlComment(vartype)
 			vartype = replaceMysqlNumIncrement(vartype)
 
-			if field.Type != vartype && strings.Contains(field.Type, "INCREMENT") {
-				fmt.Println("Replace", field.Type, "->", vartype)
-			}
+			// if field.Type != vartype {
+			// 	fmt.Println("Replace", field.Type, "->", vartype)
+			// }
 
-			sql = sql[:field.VarStart] + varName + " " + vartype + sql[field.TypeEnd:]
+			sql = sql[:field.VarStart] + varName + " " + vartype + " " + field.Ref + sql[field.TypeEnd:]
 		}
 	}
 
@@ -316,6 +339,18 @@ func replaceMysqlDataTypes(sql string) string {
 	slices.Reverse(matches)
 	for _, match := range matches {
 		sql = sql[:match[0]] + "bytea" + sql[match[1]:]
+	}
+
+	return sql
+}
+
+var regLineTypeSubtype = regexp.MustCompile(`(?i)SUB_TYPE \w*`)
+
+func replaceMysqlDataSubtypes(sql string) string {
+	matches := regLineTypeSubtype.FindAllStringSubmatchIndex(sql, -1)
+	slices.Reverse(matches)
+	for _, match := range matches {
+		sql = sql[:match[0]] + "" + sql[match[1]:]
 	}
 
 	return sql

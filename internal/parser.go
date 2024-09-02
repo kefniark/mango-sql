@@ -105,6 +105,10 @@ func ParseSchema(sql string) (*core.SQLSchema, error) {
 	for _, table := range schema.Tables {
 		for _, ref := range table.References {
 			refTable := schema.Tables[ref.Table]
+			if refTable == nil {
+				fmt.Println("Cannot find foreignKey", ref)
+				continue
+			}
 
 			refTable.Referenced = append(refTable.Referenced, &core.SQLTableReference{
 				Name:         ref.Name,
