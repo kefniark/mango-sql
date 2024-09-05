@@ -90,3 +90,44 @@ Tested in `:memory:` mode
 <iframe :src="withBase('/bench_sqlite_insertmany_alloc.html')" width=576 height=320 frameBorder="0" scrolling="no"/>
 
 <iframe :src="withBase('/bench_sqlite_findmany_alloc.html')" width=576 height=320 frameBorder="0" scrolling="no"/>
+
+
+---
+
+## MariaDB
+
+::: info
+
+Library Tested:
+* MangoSQL with go-sql-driver
+* [Gorm](https://gorm.io/) with gorm sqlite driver
+
+:::
+
+### CPU (Operation per second)
+
+::: tip Axis
+
+**Horizontal:** Size of payload (number of items)
+
+**Vertical:** Converted ns/op -> op/s, to get unit easier to visualize
+
+:::
+
+<iframe :src="withBase('/bench_mariadb_insertmany_cpu.html')" width=576 height=320 frameBorder="0" scrolling="no" />
+
+<iframe :src="withBase('/bench_mariadb_findmany_cpu.html')" width=576 height=320 frameBorder="0" scrolling="no" />
+
+### Memory Allocation
+
+::: tip Axis
+
+**Horizontal:** Size of payload (number of items)
+
+**Vertical:** Go bench alloc/op
+
+:::
+
+<iframe :src="withBase('/bench_mariadb_insertmany_alloc.html')" width=576 height=320 frameBorder="0" scrolling="no"/>
+
+<iframe :src="withBase('/bench_mariadb_findmany_alloc.html')" width=576 height=320 frameBorder="0" scrolling="no"/>

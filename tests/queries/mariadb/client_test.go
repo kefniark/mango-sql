@@ -37,7 +37,7 @@ func newTestDB(t *testing.T) (*DBClient, func()) {
 	_, err = dbAdmin.Exec("FLUSH PRIVILEGES;")
 	require.NoError(t, err)
 
-	db, err := sqlx.Connect("mysql", fmt.Sprintf("user:password@tcp(127.0.0.1:3306)/%s?parseTime=true&multiStatements=true", testDB))
+	db, err := sqlx.Connect("mysql", fmt.Sprintf("user:password@tcp(127.0.0.1:3306)/%s?parseTime=true&multiStatements=true&interpolateParams=true", testDB))
 	db.SetConnMaxIdleTime(time.Second * 10)
 	require.NoError(t, err)
 
@@ -91,14 +91,13 @@ func testInsert(t *testing.T, db *DBClient) {
 	assert.Equal(t, "tuna", u.Name)
 }
 
-/*
 func TestInsertMany(t *testing.T) {
-	db, close := newTestDB(t)
-	defer close()
+	db, closeDB := newTestDB(t)
+	defer closeDB()
 	testInsertMany(t, db)
 
-	db2, close := newTestDB(t)
-	defer close()
+	db2, closeDB := newTestDB(t)
+	defer closeDB()
 	err := db2.Transaction(func(tx *DBClient) error {
 		testInsertMany(t, tx)
 		return errors.New("rollback")
@@ -122,7 +121,7 @@ func testInsertMany(t *testing.T, db *DBClient) {
 		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 2, len(users))
+	assert.Len(t, users, 2)
 
 	count, err := db.User.Count()
 	require.NoError(t, err)
@@ -133,7 +132,6 @@ func testInsertMany(t *testing.T, db *DBClient) {
 	assert.Equal(t, "tuna", u[0].Name)
 	assert.Equal(t, "salmon", u[1].Name)
 }
-*/
 
 func TestUpdate(t *testing.T) {
 	db, closeDB := newTestDB(t)

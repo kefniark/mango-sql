@@ -24,16 +24,17 @@ func (q *{{ .Table.NameNormalized }}Queries) Insert(input {{ .Table.NameNormaliz
 //     // ...
 //   })
 func (q *{{ .Table.NameNormalized }}Queries) InsertMany(inputs []{{ .Table.NameNormalized }}Create) (requestData []{{ .Table.NameNormalized }}PrimaryKeySerialized, requestErr error) {
-	const sql = `{{ .Table.GetCreateManySQLContent }}`{{ if .Logger.HasLogger }}
+	const sql = `{{ .Table.GetCreateManySQLContent }}`{{ index .Table.GetCreateManySQLArg 0 }}{{ if .Logger.HasLogger }}
 	start := time.Now()
 	defer func() {
 		q.ctx.logQuery("DB.{{ .Table.NameNormalized }}.InsertMany", requestErr, time.Since(start), sql, inputs)
 	}(){{ end }}
 	ids := make([]{{ .Table.NameNormalized }}PrimaryKeySerialized, 0, len(inputs))
-	for chunk := range slices.Chunk(inputs, 250) {
+	for chunk := range slices.Chunk(inputs, 250) { {{ if not .Table.IsInsertMany }}
 		records := make([]{{ .Table.NameNormalized }}Update, len(chunk))
 		{{ if $.HasUUID }}uuid.EnableRandPool()
-		{{ end }}for i, input := range chunk {
+		{{ end }}
+		for i, input := range chunk {
 			records[i] = {{ if and (not .Table.HasCompositeID) (not .Table.HasStructCopy) }}{{ .Table.NameNormalized }}Update{
 				{{ range .Table.GetPrimaryKeyConstructors }}          {{ .Name }}: {{ .Init }},
         		{{ end }}{{ range .Table.ColumnsCreate }}          {{ .NameNormalized }}: input.{{ .NameNormalized }},
@@ -51,6 +52,18 @@ func (q *{{ .Table.NameNormalized }}Queries) InsertMany(inputs []{{ .Table.NameN
 		if err != nil {
 			return nil, err
 		}
+		{{ else }}
+		records := make([]interface{}, 0, len(chunk)*{{ index .Table.GetCreateManySQLArg 2 }})
+		for _, input := range chunk {
+			records = append(records, {{ range .Table.GetPrimaryKeyConstructors }}{{ .Init }},{{ end }}{{ index .Table.GetCreateManySQLArg 1 }})
+		}
+
+		prep := fmt.Sprintf(sql, strings.Join(slices.Repeat([]string{values}, len(chunk)), ", "))
+		res, err := QueryMany[UserPrimaryKeySerialized](q.ctx, prep, records...)
+		if err != nil {
+			return nil, err
+		}
+		{{ end }}
 
 		ids = append(ids, res...)
 	}

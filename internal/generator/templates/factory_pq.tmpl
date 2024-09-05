@@ -15,9 +15,13 @@ type DBClient struct {
 
 // Create a new instance of MangoSql
 func New(db *sqlx.DB {{ if and .Logger.HasLogger .Logger.HasLoggerParam }}, logger {{ .Logger.Type }}{{ end }}) *DBClient {
+	prepared_cache, _ := lru.NewWithEvict(256, func(query string, stmt *sqlx.Stmt) {
+		stmt.Close()
+	})
+
     return newClient(&DBContext{
 		db:       db,
-		prepared: make(map[string]*sqlx.Stmt),
+		prepared: prepared_cache,
 		tx:       nil,{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
 		logger: logger,{{ end }}
 	})
@@ -149,15 +153,18 @@ func Exec(ctx *DBContext, sql string, args ...interface{}) (sql.Result, error) {
 }
 
 func (ctx *DBContext) stmt(query string) (*sqlx.Stmt, error) {
-	if _, ok := ctx.prepared[query]; !ok {
-		stmt, err := ctx.db.Preparex(query)
+	var stmt *sqlx.Stmt
+	if statement, ok := ctx.prepared.Get(query); !ok {
+		statement, err := ctx.db.Preparex(query)
 		if err != nil {
 			return nil, err
 		}
-		ctx.prepared[query] = stmt
+		ctx.prepared.Add(query, statement)
+		stmt = statement
+	} else {
+		stmt = statement
 	}
 
-	stmt := ctx.prepared[query]
 	if ctx.tx != nil {
 		return ctx.tx.Stmtx(stmt), nil
 	}
@@ -184,6 +191,6 @@ type DBContext struct {
     db *sqlx.DB
     tx *sqlx.Tx{{ if and .Logger.HasLogger .Logger.HasLoggerParam }}
 	logger {{ .Logger.Type }}{{ end }}
-    prepared map[string]*sqlx.Stmt
+    prepared *lru.Cache[string, *sqlx.Stmt]
 }
 

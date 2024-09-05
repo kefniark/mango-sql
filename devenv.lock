@@ -3,11 +3,11 @@
     "devenv": {
       "locked": {
         "dir": "src/modules",
-        "lastModified": 1724763216,
+        "lastModified": 1725464985,
         "owner": "cachix",
         "repo": "devenv",
-        "rev": "1e4ef61205b9aa20fe04bf1c468b6a316281c4f1",
-        "treeHash": "5a8fdb7f5c9a192415fb9f16b950bbd0c9ea5f95",
+        "rev": "325588271687d275632958b4c988ef7a05772f65",
+        "treeHash": "a85a79c0941bff354a040b6d17fe1f542a661ed1",
         "type": "github"
       },
       "original": {
@@ -72,11 +72,11 @@
     },
     "nixpkgs-stable": {
       "locked": {
-        "lastModified": 1724531977,
+        "lastModified": 1725407940,
         "owner": "NixOS",
         "repo": "nixpkgs",
-        "rev": "2527da1ef492c495d5391f3bcf9c1dd9f4514e32",
-        "treeHash": "d14102f174ee3125e8b0167d5edd69202147f6f4",
+        "rev": "6f6c45b5134a8ee2e465164811e451dcb5ad86e3",
+        "treeHash": "f65d5344b23cfbe3695140b602bc463349b26638",
         "type": "github"
       },
       "original": {
@@ -88,11 +88,11 @@
     },
     "nixpkgs-unstable": {
       "locked": {
-        "lastModified": 1724479785,
+        "lastModified": 1725103162,
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "d0e1602ddde669d5beb01aec49d71a51937ed7be",
-        "treeHash": "79464de14ea14ded4fd827be538729d4c6d6b09d",
+        "rev": "12228ff1752d7b7624a54e9c1af4b222b3c1073b",
+        "treeHash": "d8cc3c37ece87a2f965f4749978f64552871c243",
         "type": "github"
       },
       "original": {
@@ -112,11 +112,11 @@
         "nixpkgs-stable": "nixpkgs-stable"
       },
       "locked": {
-        "lastModified": 1724837688,
+        "lastModified": 1725513492,
         "owner": "cachix",
         "repo": "pre-commit-hooks.nix",
-        "rev": "e4b258096adade1daed37f732c343d1b5374dfae",
-        "treeHash": "a4fb93ad9285f7872144df5395150475620b8f40",
+        "rev": "7570de7b9b504cfe92025dd1be797bf546f66528",
+        "treeHash": "4b46d77870afecd8f642541cb4f4927326343b59",
         "type": "github"
       },
       "original": {

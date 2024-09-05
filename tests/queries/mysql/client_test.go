@@ -93,12 +93,12 @@ func testInsert(t *testing.T, db *DBClient) {
 
 /*
 func TestInsertMany(t *testing.T) {
-	db, close := newTestDB(t)
-	defer close()
+	db, closeDB := newTestDB(t)
+	defer closeDB()
 	testInsertMany(t, db)
 
-	db2, close := newTestDB(t)
-	defer close()
+	db2, closeDB := newTestDB(t)
+	defer closeDB()
 	err := db2.Transaction(func(tx *DBClient) error {
 		testInsertMany(t, tx)
 		return errors.New("rollback")
@@ -122,7 +122,7 @@ func testInsertMany(t *testing.T, db *DBClient) {
 		},
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 2, len(users))
+	assert.Len(t, users, 2)
 
 	count, err := db.User.Count()
 	require.NoError(t, err)

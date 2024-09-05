@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"slices"
 	squirrel "github.com/Masterminds/squirrel"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/jmoiron/sqlx"
 {{ range .Deps }}   "{{ . }}"
 {{ end }}

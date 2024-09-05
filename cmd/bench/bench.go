@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -60,6 +61,11 @@ func parseBenchmarks() []BenchData {
 		})
 	}
 	return entries
+}
+
+type BenchSeries struct {
+	Name string
+	Data []opts.LineData
 }
 
 type BenchData struct {
@@ -125,13 +131,18 @@ func generateInsertManyCPULines(data []BenchData, name string, filter string) *c
 	)
 	line.SetXAxis([]string{"10", "25", "50", "100", "250", "500"})
 
+	seriesData := []BenchSeries{}
 	for k, v := range entries {
 		if !strings.Contains(k, filter) {
 			continue
 		}
-
-		line.AddSeries(strings.ReplaceAll(k, filter, ""), generateLineSpeedData(v, name))
+		seriesData = append(seriesData, BenchSeries{
+			Name: strings.ReplaceAll(k, filter, ""),
+			Data: generateLineSpeedData(v, name),
+		})
 	}
+
+	drawLines(seriesData, line)
 
 	return line
 }
@@ -153,20 +164,36 @@ func generateInsertManyAllocLines(data []BenchData, name string, filter string) 
 	)
 	line.SetXAxis([]string{"10", "25", "50", "100", "250", "500"})
 
+	seriesData := []BenchSeries{}
 	for k, v := range entries {
 		if !strings.Contains(k, filter) {
 			continue
 		}
-		line.AddSeries(strings.ReplaceAll(k, filter, ""), generateLineAllocData(v, name))
+		seriesData = append(seriesData, BenchSeries{
+			Name: strings.ReplaceAll(k, filter, ""),
+			Data: generateLineAllocData(v, name),
+		})
 	}
 
+	drawLines(seriesData, line)
+
 	return line
+}
+
+func drawLines(seriesData []BenchSeries, line *charts.Line) {
+	slices.SortFunc(seriesData, func(a, b BenchSeries) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	for _, v := range seriesData {
+		line.AddSeries(v.Name, v.Data)
+	}
 }
 
 func main() {
 	data := parseBenchmarks()
 
-	for _, db := range []string{"Postgres", "SQLite"} {
+	for _, db := range []string{"Postgres", "SQLite", "MariaDB"} {
 		for _, op := range []string{"InsertMany", "FindMany"} {
 			f1, _ := os.Create(fmt.Sprintf("docs/public/bench_%s_%s_cpu.html", strings.ToLower(db), strings.ToLower(op)))
 			defer f1.Close()
